@@ -23,12 +23,6 @@ func NewLexer(input string) *Lexer {
 	return l
 }
 
-func (l *Lexer) Test() {
-	for i, x := range l.input {
-		println(i, x)
-	}
-}
-
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -81,8 +75,6 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Literal = ""
 		tok.Type = token.EOF
 	default:
-		tok = l.readToken()
-
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
@@ -138,17 +130,6 @@ func (l *Lexer) readNumber() string {
 		l.readChar()
 	}
 	return l.input[position:l.position]
-}
-
-func (l *Lexer) readToken() token.Token {
-	//position := l.position
-	l.Test()
-	//一直 往下走，直到读取到一个
-	for isDigit(l.ch) {
-		l.readChar()
-	}
-	return token.Token{}
-	//return l.input[position:l.position]
 }
 
 func isLetter(ch byte) bool {
