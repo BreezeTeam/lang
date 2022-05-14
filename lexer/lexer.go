@@ -12,18 +12,16 @@ type Lexer struct {
 	readPosition int       // current reading position in input (after current char)
 	ch           chan Pair // channel
 	char         rune
+	line         int //input line with read
+	linePosition int //input line_position with read
 }
+
 type Pair struct {
 	Pos  int
 	Char rune
 }
 
-//
-//  NewLexer
-//  @Description: 该处初始化输入的string 应当就是一个完全的程序了
-//  @param input
-//  @return *Lexer
-//
+// NewLexer  创建文本解析器
 func NewLexer(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.ch = helper.Yield(func(ts chan Pair) {
@@ -31,6 +29,9 @@ func NewLexer(input string) *Lexer {
 			ts <- Pair{i, x}
 		}
 	})
+	//初始化为第一行,第-1个字符
+	l.line = 1
+	l.linePosition = -1
 	l.readChar()
 	return l
 }
@@ -87,6 +88,7 @@ func (l *Lexer) NextToken() token.Token {
 		tok.Literal = ""
 		tok.Type = token.EOF
 	default:
+		// 标识符都不能以数字开头，数字开头的一定是数字
 		if isDigit(l.char) {
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
@@ -99,26 +101,49 @@ func (l *Lexer) NextToken() token.Token {
 			tok = newToken(token.ILLEGAL, l.char)
 		}
 	}
-
 	l.readChar()
 	return tok
 }
 
+//
+//  skipWhitespace
+//  @Description: 循环读取，并跳过空白符
+//  @receiver l
+//
 func (l *Lexer) skipWhitespace() {
 	for l.char == rune(' ') || l.char == rune('\t') || l.char == rune('\n') || l.char == rune('\r') {
 		l.readChar()
 	}
 }
+
+//
+//  readChar
+//  @Description: 如果打算读取的字符超过输入文本长度，则返回EOF，否则从channel rune流中读取字母
+//  @receiver l
+//
 func (l *Lexer) readChar() {
-	if l.position >= len(l.input) {
+	if l.position+len(string(l.char)) >= len(l.input) {
+		l.position += len(string(l.char))
 		l.char = 0
 	} else {
 		pair := <-l.ch
 		l.char, l.position = pair.Char, pair.Pos
+		if l.char == '\n' {
+			l.line += 1
+			l.linePosition = -1
+		} else {
+			l.linePosition += 1
+		}
 	}
-	fmt.Printf("%d %c \n", l.position, l.char)
+	fmt.Printf("readChar %d %c \n", l.position, l.char)
 }
 
+//
+//  peekChar
+//  @Description:TODO:提前读取下一个字符
+//  @receiver l
+//  @return byte
+//
 func (l *Lexer) peekChar() byte {
 	if l.position+1 >= len(l.input) {
 		return 0
@@ -128,6 +153,12 @@ func (l *Lexer) peekChar() byte {
 	}
 }
 
+//
+//  readIdentifier
+//  @Description:循环读取字符，知道遇到一个非标识字符
+//  @receiver l
+//  @return string
+//
 func (l *Lexer) readIdentifier() string {
 	position := l.position
 	for isIdentifiers(l.char) {
@@ -136,6 +167,12 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[position:l.position]
 }
 
+//
+//  readNumber
+//  @Description: 循环读取字符,直到读取到非数字字符
+//  @receiver l
+//  @return string
+//
 func (l *Lexer) readNumber() string {
 	position := l.position
 	for isDigit(l.char) {
@@ -144,13 +181,33 @@ func (l *Lexer) readNumber() string {
 	return l.input[position:l.position]
 }
 
+//
+//  isIdentifiers
+//  @Description:判断是否为合法的标识符，即 以下划线或者字母开头， 用 字母，数字和下划线组成的 token
+//  @param ch
+//  @return bool
+//
 func isIdentifiers(ch rune) bool {
 	return rune('a') <= ch && ch <= rune('z') || rune('A') <= ch && ch <= rune('Z') || ch == rune('_') || ch > 128
 }
+
+//
+//  isDigit
+//  @Description: 判断是否为数字
+//  @param ch
+//  @return bool
+//
 func isDigit(ch rune) bool {
 	return rune('0') <= ch && ch <= rune('9')
 }
 
+//
+//  newToken
+//  @Description: 创建一个新token
+//  @param tokenType
+//  @param ch
+//  @return token.Token
+//
 func newToken(tokenType token.TokenType, ch rune) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
 }
