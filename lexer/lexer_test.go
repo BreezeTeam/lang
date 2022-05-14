@@ -1,19 +1,21 @@
 package lexer
 
 import (
+	"fmt"
 	"lang/token"
 	"testing"
 )
 
 func TestNextToken(t *testing.T) {
-	input := `let five = 5;
+	input := `
+let five = 5;
 let ten = 10;
 
-let 函数 = func(x, y) {
+let _函数 = func(x, y) {
   x + y;
 };
 
-let result = 函数(five, ten);
+let result =_函数(five, ten);
 !-/*5;
 5 < 10 > 5;
 
@@ -42,7 +44,7 @@ if (5 < 10) {
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
 		{token.LET, "let"},
-		{token.IDENT, "函数"},
+		{token.IDENT, "_函数"},
 		{token.ASSIGN, "="},
 		{token.FUNCTION, "func"},
 		{token.LPAREN, "("},
@@ -60,7 +62,7 @@ if (5 < 10) {
 		{token.LET, "let"},
 		{token.IDENT, "result"},
 		{token.ASSIGN, "="},
-		{token.IDENT, "add"},
+		{token.IDENT, "_函数"},
 		{token.LPAREN, "("},
 		{token.IDENT, "five"},
 		{token.COMMA, ","},
@@ -111,7 +113,7 @@ if (5 < 10) {
 
 	for i, tt := range tests {
 		tok := l.NextToken()
-
+		fmt.Printf("===============TOK %s %s \n", tok.Literal, tok.Type)
 		if tok.Type != tt.expectedType {
 			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q",
 				i, tt.expectedType, tok.Type)

@@ -2,7 +2,7 @@
 // @Author Euraxluo  9:08:00
 package helper
 
-func Yield[T any](f func(chan T)) chan T {
+func Yield[T interface{}](f func(chan T)) chan T {
 	ch := make(chan T)
 	go func() {
 		f(ch)
