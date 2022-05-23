@@ -233,6 +233,7 @@ func (p *Parser) registerExpressionParseFunc() {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -302,6 +303,53 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		}
 	}
 	return expression
+}
+
+// parseFunctionLiteral  解析函数表达式
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	functionLiteral := ast.FunctionLiteral{
+		Token: p.curToken,
+	}
+	//当前是func，推进到 （,然后进行 参数解析即 标识符列表解析
+	if p.expectNextToken(token.LPAREN) {
+		functionLiteral.Parameters = p.parseFuncParams()
+	} else {
+		return nil
+	}
+	//解析完成（），开始解析{}
+	//推进到{
+	if p.expectNextToken(token.LBRACE) {
+		functionLiteral.Body = (p.parseStatement()).(*ast.BlockStatement)
+	} else {
+		return nil
+	}
+
+	return &functionLiteral
+}
+
+// parseFunctionLiteral  解析函数表达式
+func (p *Parser) parseFuncParams() []*ast.Identifier {
+	var identifier []*ast.Identifier
+	//推进下一个token
+	//开始时，当前的token为（
+	//如果下一个是 )，则切换并退出
+	if p.expectNextToken(token.RPAREN) {
+		return identifier
+	}
+	//否则的话，开始 标识符列表的解析
+	p.advanceTokens() //获取当前这一个非)的token
+	identifier = append(identifier, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+	//然后就会遇见,;如果下一个是分隔符，那么就跳过，然后继续装载id
+	for p.expectNextToken(token.COMMA) {
+		p.advanceTokens() //获取当前这一个非)的token
+		identifier = append(identifier, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+	}
+	//此时当前token是最后一个标识符
+	//跳过最后的),如果没有)，则有问题，应该报错
+	if !p.expectNextToken(token.RPAREN) {
+		return nil
+	}
+	return identifier
 }
 
 /////////////////////////////////////////////////////////////

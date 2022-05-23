@@ -243,6 +243,39 @@ func (f *FunctionLiteral) expressionNode() {
 
 var _ Expression = &FunctionLiteral{}
 
+type CallExpression struct {
+	Token     token.Token // token () is call
+	Function  Expression
+	Arguments []Expression
+}
+
+func (c *CallExpression) TokenLiteral() string {
+	return c.Token.Literal
+}
+
+func (c *CallExpression) String() string {
+	var (
+		out  bytes.Buffer
+		args []string
+	)
+	for _, a := range c.Arguments {
+		args = append(args, a.String())
+	}
+
+	out.WriteString(c.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
+	return out.String()
+}
+
+func (c *CallExpression) expressionNode() {
+	//TODO implement me
+	panic("implement me")
+}
+
+var _ Expression = &CallExpression{}
+
 //////////////////////////////////////////
 // 语句 结构
 //////////////////////////////////////////

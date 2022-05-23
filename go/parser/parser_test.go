@@ -476,6 +476,78 @@ func TestParseIfExpression(t *testing.T) {
 	}
 }
 
+func TestFunctionLiteralParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"func(x,y){x+y}",
+			"func(x, y)  { (x + y) } ",
+		},
+		{
+			"func(){y+z}",
+			"func()  { (y + z) } ",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := NewParser(lexer.NewLexer(tt.input))
+			program := p.ProgramParser()
+			checkParserErrors(t, p)
+			if program == nil {
+				t.Errorf("`%s` parser result is nil", tt.input)
+			} else {
+				if program.String() != tt.expected {
+					t.Errorf("`%s` parser Statement is %s ,want %s", tt.input, program.String(), tt.expected)
+				} else {
+					t.Logf("`%s` => `%s`", tt.input, program.String())
+				}
+			}
+		})
+	}
+}
+
+func TestCallExpressionParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"add(2, 3)",
+			"func(x, y)  { (x + y) } ",
+		},
+		{
+			"add(2 + 2, 3 * 3 * 3)",
+			"func()  { (y + z) } ",
+		},
+		{
+			"fn(x, y) { x + y; }(2, 3)",
+			"func()  { (y + z) } ",
+		},
+		{
+			"callsFunction(2, 3, fn(x, y) { x + y; });",
+			"func()  { (y + z) } ",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := NewParser(lexer.NewLexer(tt.input))
+			program := p.ProgramParser()
+			checkParserErrors(t, p)
+			if program == nil {
+				t.Errorf("`%s` parser result is nil", tt.input)
+			} else {
+				if program.String() != tt.expected {
+					t.Errorf("`%s` parser Statement is %s ,want %s", tt.input, program.String(), tt.expected)
+				} else {
+					t.Logf("`%s` => `%s`", tt.input, program.String())
+				}
+			}
+		})
+	}
+}
+
 // checkParserErrors  验证有没有解析错误
 func checkParserErrors(t *testing.T, p *Parser) {
 	errors := p.Errors()
