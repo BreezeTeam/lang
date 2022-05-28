@@ -50,6 +50,7 @@ var Precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 /////////////////////////////////////////////////////////////
@@ -81,6 +82,7 @@ func (p *Parser) ProgramParser() *ast.Program {
 		if !ast.StatementIsNil(stmt) {
 			program.Statement = append(program.Statement, stmt)
 		}
+		// TODO if stmt is nil， error handler
 		p.advanceTokens()
 	}
 	return program
@@ -134,6 +136,7 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	p.advanceTokens()
 	//获取下一个token
 	stmt.ReturnValue = p.parseExpression(LOWEST)
+	// ; 是可选的
 	if p.nextTokenIs(token.SEMICOLON) {
 		p.advanceTokens()
 	}
@@ -159,7 +162,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	p.advanceTokens()
 	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
-		if stmt != nil {
+		if !ast.StatementIsNil(stmt) {
 			block.Statement = append(block.Statement, stmt)
 		}
 		p.advanceTokens()
@@ -243,6 +246,7 @@ func (p *Parser) registerExpressionParseFunc() {
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 }
 
 // parseIdentifiers  标识符解析器
@@ -350,6 +354,49 @@ func (p *Parser) parseFuncParams() []*ast.Identifier {
 		return nil
 	}
 	return identifier
+}
+
+// parseCallExpression returns the next token
+// function 被调用的函数，同时这里还有一种情况，那就是 function 这个地方不是一个标识符，还是一个 expression
+// call 本质上是一个 中缀表达式
+// left 为 一个标识符，表示一个函数
+// right 为 参数列表，传递给 函数
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	expression := &ast.CallExpression{
+		Token:    p.curToken,
+		Function: function,
+	}
+	// 此时 当前 token 为？
+	expression.Arguments = p.parseCallArguments()
+	return expression
+}
+
+// parseCallArguments 解析调用参数
+func (p *Parser) parseCallArguments() []ast.Expression {
+	var args []ast.Expression
+	//推进下一个token
+	//开始时，当前的token为（
+	//如果下一个是 )，则切换并退出
+	if p.expectNextToken(token.RPAREN) {
+		p.advanceTokens()
+		return args
+	}
+	//否则的话，开始 调用参数列表的解析
+	p.advanceTokens() //获取当前这一个非)的token
+
+	// 从下一个token 开始解析 表达式
+	args = append(args, p.parseExpression(LOWEST))
+	//然后就会遇见,;如果下一个是分隔符，那么就跳过，然后继续装载expression
+	for p.expectNextToken(token.COMMA) {
+		p.advanceTokens() //获取当前这一个非)的token
+		args = append(args, p.parseExpression(LOWEST))
+	}
+	//此时当前token是最后一个标识符
+	//跳过最后的),如果没有)，则有问题，应该报错
+	if !p.expectNextToken(token.RPAREN) {
+		return nil
+	}
+	return args
 }
 
 /////////////////////////////////////////////////////////////

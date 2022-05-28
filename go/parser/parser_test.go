@@ -11,6 +11,14 @@ func TestLetStatements(t *testing.T) {
 		wantStatement int
 	}{
 		{
+			"let x=y",
+			1,
+		},
+		{
+			"let x=",
+			-1,
+		},
+		{
 			"let",
 			0,
 		},
@@ -19,19 +27,11 @@ func TestLetStatements(t *testing.T) {
 			0,
 		},
 		{
-			"let x+y",
-			0,
-		},
-		{
-			"let x=",
-			0,
-		},
-		{
 			"let x=1",
 			1,
 		},
 		{
-			"let x=12DSADAS;",
+			"let x=_12DSADAS;",
 			1,
 		},
 		{
@@ -47,6 +47,10 @@ func TestLetStatements(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			p := NewParser(lexer.NewLexer(tt.input))
 			program := p.ProgramParser()
+			if tt.wantStatement == -1 && len(p.Errors()) > 0 {
+				t.Log(program.String())
+				return
+			}
 			checkParserErrors(t, p)
 			if program == nil {
 				t.Errorf("`%s` parser result is nil", tt.input)
@@ -66,15 +70,15 @@ func TestReturnStatements(t *testing.T) {
 	}{
 		{
 			"return",
-			0,
+			-1,
 		},
 		{
 			"return 0",
-			0,
+			1,
 		},
 		{
 			"return asa",
-			0,
+			1,
 		},
 		{
 			"return as;",
@@ -82,11 +86,11 @@ func TestReturnStatements(t *testing.T) {
 		},
 		{
 			"return;",
-			0,
+			-1,
 		},
 		{
 			"return abc(1231)",
-			0,
+			1,
 		},
 		{
 			"return abc(1231);",
@@ -97,6 +101,10 @@ func TestReturnStatements(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			p := NewParser(lexer.NewLexer(tt.input))
 			program := p.ProgramParser()
+			if tt.wantStatement == -1 && len(p.Errors()) > 0 {
+				t.Log(program.String())
+				return
+			}
 			checkParserErrors(t, p)
 			if program == nil {
 				t.Errorf("`%s` parser result is nil", tt.input)
@@ -125,7 +133,7 @@ func TestIdentifierExpression(t *testing.T) {
 		},
 		{
 			"123abc;",
-			1,
+			-1,
 		},
 		{
 			"abc123;",
@@ -144,6 +152,10 @@ func TestIdentifierExpression(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			p := NewParser(lexer.NewLexer(tt.input))
 			program := p.ProgramParser()
+			if tt.wantStatement == -1 && len(p.Errors()) > 0 {
+				t.Log(program.String())
+				return
+			}
 			checkParserErrors(t, p)
 			if program == nil {
 				t.Errorf("`%s` parser result is nil", tt.input)
@@ -168,7 +180,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 		},
 		{
 			"123abc;",
-			0,
+			-1,
 		},
 		{
 			"123;",
@@ -179,6 +191,10 @@ func TestIntegerLiteralExpression(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			p := NewParser(lexer.NewLexer(tt.input))
 			program := p.ProgramParser()
+			if tt.wantStatement == -1 && len(p.Errors()) > 0 {
+				t.Log(program.String())
+				return
+			}
 			checkParserErrors(t, p)
 			if program == nil {
 				t.Errorf("`%s` parser result is nil", tt.input)
@@ -483,11 +499,11 @@ func TestFunctionLiteralParsing(t *testing.T) {
 	}{
 		{
 			"func(x,y){x+y}",
-			"func(x, y)  { (x + y) } ",
+			"func(x, y) { (x + y) } ",
 		},
 		{
 			"func(){y+z}",
-			"func()  { (y + z) } ",
+			"func() { (y + z) } ",
 		},
 	}
 	for _, tt := range tests {
@@ -514,20 +530,24 @@ func TestCallExpressionParsing(t *testing.T) {
 		expected string
 	}{
 		{
+			"func(x, y) { (x + y) } (1, 2)",
+			"func(x, y) { (x + y) } (1, 2)",
+		},
+		{
 			"add(2, 3)",
-			"func(x, y)  { (x + y) } ",
+			"add(2, 3)",
 		},
 		{
 			"add(2 + 2, 3 * 3 * 3)",
-			"func()  { (y + z) } ",
+			"add((2 + 2), ((3 * 3) * 3))",
 		},
 		{
-			"fn(x, y) { x + y; }(2, 3)",
-			"func()  { (y + z) } ",
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
 		},
 		{
-			"callsFunction(2, 3, fn(x, y) { x + y; });",
-			"func()  { (y + z) } ",
+			"callsFunction(func(x, y) { x + y; });",
+			"callsFunction(func(x, y) { (x + y) } )",
 		},
 	}
 	for _, tt := range tests {

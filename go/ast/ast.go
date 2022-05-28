@@ -231,7 +231,7 @@ func (f *FunctionLiteral) String() string {
 	out.WriteString(f.TokenLiteral())
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
+	out.WriteString(")")
 	out.WriteString(f.Body.String())
 	return out.String()
 }
