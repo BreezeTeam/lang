@@ -1,0 +1,67 @@
+package object
+
+import "fmt"
+
+type ObjectType string
+
+const (
+	NULL_OBJ    = "NULL"
+	INTEGER_OBJ = "INTEGER"
+	BOOLEAN_OBJ = "BOOLEAN"
+	RETURN_OBJ  = "RETURN"
+	ERROR_OBJ   = "ERROR"
+)
+
+// Object 对象接口
+type Object interface {
+	Type() ObjectType //对象类型
+	Inspect() string  // 对象监视值
+}
+
+// Boolean bool type object
+type Boolean struct {
+	Value bool
+}
+
+func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
+func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
+
+var _ Object = &Boolean{}
+
+// Integer int type object
+type Integer struct {
+	Value int64
+}
+
+func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
+func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
+
+var _ Object = &Integer{}
+
+// NULL type object
+type NULL struct{}
+
+func (n *NULL) Type() ObjectType { return NULL_OBJ }
+func (n *NULL) Inspect() string  { return "null" }
+
+var _ Object = &NULL{}
+
+// RETURN type object
+type Return struct {
+	Value Object
+}
+
+func (r *Return) Type() ObjectType { return RETURN_OBJ }
+func (r *Return) Inspect() string  { return r.Value.Inspect() }
+
+var _ Object = &Return{}
+
+// Error type object
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjectType { return ERROR_OBJ }
+func (e *Error) Inspect() string  { return "Error:" + e.Message }
+
+var _ Object = &Error{}
