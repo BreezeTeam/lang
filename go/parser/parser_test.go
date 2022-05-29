@@ -175,6 +175,10 @@ func TestIntegerLiteralExpression(t *testing.T) {
 		wantStatement int
 	}{
 		{
+			"1",
+			1,
+		},
+		{
 			"123",
 			1,
 		},

@@ -27,6 +27,7 @@ func NewLexer(input string) *Lexer {
 		for i, x := range l.input {
 			ts <- Pair{i, x}
 		}
+		ts <- Pair{len(l.input), 0}
 	})
 	//初始化为第一行,第-1个字符
 	l.line = 1
@@ -113,12 +114,13 @@ func (l *Lexer) skipWhitespace() {
 
 // readChar  如果打算读取的字符超过输入文本长度，则返回EOF，否则从channel rune流中读取字母
 func (l *Lexer) readChar() {
-	if l.position+len(string(l.char)) >= len(l.input) {
-		l.position += len(string(l.char))
+	if l.position >= len(l.input) {
+		//l.position += len(string(l.char))
 		l.char = 0
 	} else {
 		pair := <-l.ch
 		l.char, l.position = pair.Char, pair.Pos
+		l.position += len(string(l.char)) - 1
 		if l.char == '\n' {
 			l.line += 1
 			l.linePosition = -1
