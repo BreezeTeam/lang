@@ -189,6 +189,10 @@ return 1;
 }`,
 			"unknown operator:BOOLEAN + BOOLEAN",
 		},
+		{
+			"id",
+			"identifier not found: id",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
@@ -205,5 +209,6 @@ func testEval(input string) object.Object {
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
 	program := p.ProgramParser()
-	return Eval(program)
+	env := object.NewEnviroment()
+	return Eval(program, env)
 }
