@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"fmt"
 	"lang/ast"
 	"lang/object"
 	"lang/token"
@@ -11,6 +12,37 @@ var (
 	TRUE  = &object.Boolean{Value: true}
 	FALSE = &object.Boolean{Value: false}
 )
+
+// isError  判断是否是Error类型
+func isError(obj object.Object) bool {
+	if obj != nil {
+		return obj.Type() == object.ERROR_OBJ
+	}
+	return false
+}
+
+// isRealTrue  判断object 类型的真正真假
+func isRealTrue(obj object.Object) bool {
+	switch obj {
+	case NULL:
+		return false
+	case TRUE:
+		return true
+	case FALSE:
+		return false
+	default:
+		return true
+	}
+}
+
+// newError  构造错误
+func newError(s string, a ...interface{}) object.Object {
+	return &object.Error{Message: fmt.Sprintf(s, a...)}
+}
+
+/////////////////////////////////
+// eval functions
+////////////////////////////////
 
 // Eval tree-walking algo run ast tree
 func Eval(node ast.Node) object.Object {
@@ -28,12 +60,9 @@ func Eval(node ast.Node) object.Object {
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
 	case *ast.PrefixExpression:
-		right := Eval(node.Right)
-		return evalPrefixExpression(node.Operator, right)
+		return evalPrefixExpression(node)
 	case *ast.InfixExpression:
-		left := Eval(node.Left)
-		right := Eval(node.Right)
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpression(node)
 	case *ast.IfExpression:
 		return evalIfExpression(node)
 	case *ast.BlockStatement:
@@ -45,10 +74,12 @@ func Eval(node ast.Node) object.Object {
 	return nil
 }
 
+// evalIfExpression  eval if语句
 func evalIfExpression(node *ast.IfExpression) object.Object {
 	condition := Eval(node.Condition)
-
-	if isRealTrue(condition) {
+	if isError(condition) {
+		return condition
+	} else if isRealTrue(condition) {
 		return Eval(node.Consequence)
 	} else if node.Alternative != nil {
 		return Eval(node.Alternative)
@@ -57,33 +88,32 @@ func evalIfExpression(node *ast.IfExpression) object.Object {
 	}
 }
 
-func isRealTrue(obj object.Object) bool {
-	switch obj {
-	case NULL:
-		return false
-	case TRUE:
-		return true
-	case FALSE:
-		return false
-	default:
-		return true
+// evalInfixExpression  eval infix
+func evalInfixExpression(node *ast.InfixExpression) object.Object {
+	left := Eval(node.Left)
+	if isError(left) {
+		return left
 	}
-}
-
-func evalInfixExpression(operator string, left object.Object, right object.Object) object.Object {
+	right := Eval(node.Right)
+	if isError(right) {
+		return right
+	}
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
-		return evalIntegerInfixExpression(operator, left, right)
-	case token.EQ == operator:
+		return evalIntegerInfixExpression(node.Operator, left, right)
+	case token.EQ == node.Operator:
 		return nativeBoolToBooleanObject(left == right)
-	case token.NOT_EQ == operator:
+	case token.NOT_EQ == node.Operator:
 		return nativeBoolToBooleanObject(left != right)
+	case left.Type() != right.Type():
+		return newError("type not match:%s %s %s", left.Type(), node.Operator, right.Type())
 	default:
-		return NULL
+		return newError("unknown operator:%s %s %s", left.Type(), node.Operator, right.Type())
 	}
 }
 
-func evalIntegerInfixExpression(operator interface{}, left object.Object, right object.Object) object.Object {
+// evalIntegerInfixExpression  eval integer
+func evalIntegerInfixExpression(operator string, left object.Object, right object.Object) object.Object {
 	leftVal := left.(*object.Integer).Value
 	rightVal := right.(*object.Integer).Value
 	switch operator {
@@ -104,30 +134,44 @@ func evalIntegerInfixExpression(operator interface{}, left object.Object, right 
 	case token.LT:
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	default:
-		return NULL
+		return newError("unknown operator:%s %s %s", left.Type(), operator, right.Type())
 	}
 }
 
-func evalPrefixExpression(operator string, right object.Object) object.Object {
-	switch operator {
+// nativeBoolToBooleanObject  将原生的真假，转换为object
+func nativeBoolToBooleanObject(value bool) *object.Boolean {
+	if value {
+		return TRUE
+	}
+	return FALSE
+}
+
+// evalPrefixExpression  eval prefix
+func evalPrefixExpression(node *ast.PrefixExpression) object.Object {
+	right := Eval(node.Right)
+	if isError(right) {
+		return right
+	}
+	switch node.Operator {
 	case token.BANG:
 		return evalBangOperatorExpression(right)
 	case token.MINUS:
 		return evalMinusOperatorExpression(right)
-
 	default:
-		return NULL
+		return newError("unknown operator:%s%s", node.Operator, right.Type())
 	}
 }
 
-func evalMinusOperatorExpression(right object.Object) object.Object {
+// evalMinusOperatorExpression  eval minus
+func evalMinusOperatorExpression(right object.Object) object.Object { // evalMinusOperatorExpression
 	if right.Type() != object.INTEGER_OBJ {
-		return NULL
+		return newError("unknown operator:%s%s", token.MINUS, right.Type())
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
 }
 
+// evalBangOperatorExpression  eval bang
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
 	case TRUE:
@@ -141,13 +185,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	}
 }
 
-func nativeBoolToBooleanObject(value bool) *object.Boolean {
-	if value {
-		return TRUE
-	}
-	return FALSE
-}
-
+// evalStatements  eval statements
 func evalStatements(statements []ast.Statement) object.Object {
 	var result object.Object
 	for _, statement := range statements {
@@ -155,6 +193,9 @@ func evalStatements(statements []ast.Statement) object.Object {
 		//if current statement is returnStatement; jump other statements
 		if returnValue, ok := result.(*object.Return); ok {
 			return returnValue
+		}
+		if errorValue, ok := result.(*object.Error); ok {
+			return errorValue
 		}
 	}
 	return result

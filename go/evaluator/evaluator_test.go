@@ -126,6 +126,81 @@ func TestIfElseExpressions(t *testing.T) {
 	}
 }
 
+func TestErrorHandler(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{
+			"5 + true;",
+			"type not match:INTEGER + BOOLEAN",
+		},
+		{
+			"5 + true; 5;",
+			"type not match:INTEGER + BOOLEAN",
+		},
+		{
+			"-true",
+			"unknown operator:-BOOLEAN",
+		},
+		{
+			"true + false;",
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+		{
+			"5; true + false; 5",
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+		{
+			"if (10 > 1) { true + false; }",
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+		{
+			"if (10 > true) { true + false; }",
+			"type not match:INTEGER > BOOLEAN",
+		},
+		{
+			"return true+false;",
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+		{
+			"return (true+false)+(true+false);",
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+		{
+			"return -(true+false);",
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+		{`
+if (10 > 1) {
+if (10 > true) {
+return true + false;
+}
+return 1;
+}`,
+			"type not match:INTEGER > BOOLEAN",
+		},
+		{`
+if (10 > 1) {
+if (true) {
+return true + false;
+}
+return 1;
+}`,
+			"unknown operator:BOOLEAN + BOOLEAN",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			got := evaluated.(*object.Error).Message
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Eval() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
