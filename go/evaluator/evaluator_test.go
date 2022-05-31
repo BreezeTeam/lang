@@ -125,6 +125,37 @@ func TestIfElseExpressions(t *testing.T) {
 		})
 	}
 }
+func TestFunction(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{"func(x) { x; }(5)", 5},
+		{"let identity = func(x) { x; }; identity(5);", 5},
+		{"let identity = func(x) { return x; }; identity(5);", 5},
+		{"let double = func(x) { x * 2; }; double(5);", 10},
+		{"let add = func(x, y) { x + y; }; add(5, 5);", 10},
+		{"let add = func(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			if tt.want == nil {
+				got := evaluated
+				if !reflect.DeepEqual(got, NULL) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+				return
+			}
+			if want, ok := tt.want.(int); ok {
+				got := evaluated.(*object.Integer).Value
+				if !reflect.DeepEqual(got, int64(want)) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
 
 func TestErrorHandler(t *testing.T) {
 	tests := []struct {
@@ -209,6 +240,6 @@ func testEval(input string) object.Object {
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
 	program := p.ProgramParser()
-	env := object.NewEnviroment()
+	env := object.NewEnvironment()
 	return Eval(program, env)
 }

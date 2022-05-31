@@ -1,15 +1,21 @@
 package object
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"lang/ast"
+	"strings"
+)
 
 type ObjectType string
 
 const (
-	NULL_OBJ    = "NULL"
-	INTEGER_OBJ = "INTEGER"
-	BOOLEAN_OBJ = "BOOLEAN"
-	RETURN_OBJ  = "RETURN"
-	ERROR_OBJ   = "ERROR"
+	NULL_OBJ     = "NULL"
+	INTEGER_OBJ  = "INTEGER"
+	BOOLEAN_OBJ  = "BOOLEAN"
+	RETURN_OBJ   = "RETURN"
+	ERROR_OBJ    = "ERROR"
+	FUNCTION_OBJ = "FUNCTION"
 )
 
 // Object 对象接口
@@ -46,7 +52,7 @@ func (n *NULL) Inspect() string  { return "null" }
 
 var _ Object = &NULL{}
 
-// RETURN type object
+// Return type object
 type Return struct {
 	Value Object
 }
@@ -65,3 +71,29 @@ func (e *Error) Type() ObjectType { return ERROR_OBJ }
 func (e *Error) Inspect() string  { return "Error:" + e.Message }
 
 var _ Object = &Error{}
+
+// Function type object
+type Function struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
+func (f *Function) Inspect() string {
+	var (
+		out    bytes.Buffer
+		params []string
+	)
+	for _, p := range f.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString("func")
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(")")
+	out.WriteString(f.Body.String())
+	return out.String()
+}
+
+var _ Object = &Function{}

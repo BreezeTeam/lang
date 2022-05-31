@@ -45,7 +45,7 @@ func newError(s string, a ...interface{}) object.Object {
 ////////////////////////////////
 
 // Eval tree-walking algo run ast tree
-func Eval(node ast.Node, env *object.Enviroment) object.Object {
+func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
 		result := evalStatements(node.Statement, env)
@@ -71,6 +71,20 @@ func Eval(node ast.Node, env *object.Enviroment) object.Object {
 		return evalStatements(node.Statement, env)
 	case *ast.ReturnStatement:
 		return &object.Return{Value: Eval(node.ReturnValue, env)}
+	case *ast.FunctionLiteral:
+		return &object.Function{Parameters: node.Parameters, Body: node.Body, Env: env}
+	case *ast.CallExpression:
+		//先得到 function 对象
+		function := Eval(node.Function, env)
+		if isError(function) {
+			return function
+		}
+		args := evalExpression(node.Arguments, env)
+		//如果只有参数解析发生错误
+		if len(args) == 1 && isError(args[0]) {
+			return args[0]
+		}
+		return applyFunction(function, args)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
 		if isError(val) {
@@ -81,7 +95,48 @@ func Eval(node ast.Node, env *object.Enviroment) object.Object {
 	return nil
 }
 
-func evalIdentifier(node *ast.Identifier, env *object.Enviroment) object.Object {
+// applyFunction 通过args传递给function，实现函数调用
+func applyFunction(function object.Object, args []object.Object) object.Object {
+	if fn, ok := function.(*object.Function); ok {
+		//拷贝一个 环境，这样就可以拷贝调用时的环境了，顺便把
+		extendEnv := extendFunctionENV(fn, args)
+		evaluated := Eval(fn.Body, extendEnv)
+		return unwrapReturnValue(evaluated)
+
+	}
+	return newError("not a function:%s", function.Type())
+}
+
+// unwrapReturnValue 将函数调用结果 解开，并返回结果;如果不是return，则直接返回最后的结果
+func unwrapReturnValue(evaluated object.Object) object.Object {
+	if returnValue, ok := evaluated.(*object.Return); ok {
+		return returnValue.Value
+	}
+	return evaluated
+}
+
+func extendFunctionENV(function *object.Function, args []object.Object) *object.Environment {
+	env := object.NewEnclosedEnvironment(function.Env)
+	for idx, param := range function.Parameters {
+		env.Set(param.Value, args[idx])
+	}
+	return env
+}
+
+// evalExpression 将每个 调用时的每个入参都执行一下，传到函数的env中
+func evalExpression(exps []ast.Expression, env *object.Environment) []object.Object {
+	var result []object.Object
+	for _, e := range exps {
+		evaluated := Eval(e, env)
+		if isError(evaluated) {
+			return []object.Object{evaluated}
+		}
+		result = append(result, evaluated)
+	}
+	return result
+}
+
+func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
 	if val, ok := env.Get(node.Value); !ok {
 		return newError("identifier not found: " + node.Value)
 	} else {
@@ -91,7 +146,7 @@ func evalIdentifier(node *ast.Identifier, env *object.Enviroment) object.Object 
 }
 
 // evalIfExpression  eval if语句
-func evalIfExpression(node *ast.IfExpression, env *object.Enviroment) object.Object {
+func evalIfExpression(node *ast.IfExpression, env *object.Environment) object.Object {
 	condition := Eval(node.Condition, env)
 	if isError(condition) {
 		return condition
@@ -105,7 +160,7 @@ func evalIfExpression(node *ast.IfExpression, env *object.Enviroment) object.Obj
 }
 
 // evalInfixExpression  eval infix
-func evalInfixExpression(node *ast.InfixExpression, env *object.Enviroment) object.Object {
+func evalInfixExpression(node *ast.InfixExpression, env *object.Environment) object.Object {
 	left := Eval(node.Left, env)
 	if isError(left) {
 		return left
@@ -163,7 +218,7 @@ func nativeBoolToBooleanObject(value bool) *object.Boolean {
 }
 
 // evalPrefixExpression  eval prefix
-func evalPrefixExpression(node *ast.PrefixExpression, env *object.Enviroment) object.Object {
+func evalPrefixExpression(node *ast.PrefixExpression, env *object.Environment) object.Object {
 	right := Eval(node.Right, env)
 	if isError(right) {
 		return right
@@ -202,7 +257,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 }
 
 // evalStatements  eval statements
-func evalStatements(statements []ast.Statement, env *object.Enviroment) object.Object {
+func evalStatements(statements []ast.Statement, env *object.Environment) object.Object {
 	var result object.Object
 	for _, statement := range statements {
 		result = Eval(statement, env)
