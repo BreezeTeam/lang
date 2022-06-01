@@ -62,6 +62,99 @@ func (p *Program) TokenLiteral() (res string) {
 var _ Node = &Program{}
 
 //////////////////////////////////////////
+// Literal
+//////////////////////////////////////////
+
+type IntegerLiteral struct {
+	Token token.Token
+	Value int64
+}
+
+func (i *IntegerLiteral) TokenLiteral() string {
+	return i.Token.Literal
+}
+
+func (i *IntegerLiteral) String() string {
+	return i.Token.Literal
+}
+
+func (i *IntegerLiteral) expressionNode() {
+	//TODO implement me
+	panic("implement me")
+}
+
+var _ Expression = &IntegerLiteral{}
+
+type Boolean struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *Boolean) TokenLiteral() string {
+	return b.Token.Literal
+}
+
+func (b *Boolean) String() string {
+	return b.Token.Literal
+}
+
+func (b *Boolean) expressionNode() {
+	//TODO implement me
+	panic("implement me")
+}
+
+var _ Expression = &Boolean{}
+
+type FunctionLiteral struct {
+	Token      token.Token // func token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (f *FunctionLiteral) TokenLiteral() string {
+	return f.Token.Literal
+}
+
+func (f *FunctionLiteral) String() string {
+	var (
+		out    bytes.Buffer
+		params []string
+	)
+	for _, p := range f.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString(f.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(")")
+	out.WriteString(f.Body.String())
+	return out.String()
+}
+
+func (f *FunctionLiteral) expressionNode() {
+	//TODO implement me
+	panic("implement me")
+}
+
+var _ Expression = &FunctionLiteral{}
+
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (s *StringLiteral) expressionNode() {}
+func (s *StringLiteral) TokenLiteral() string {
+	return s.Token.Literal
+}
+
+func (s *StringLiteral) String() string {
+	return s.Token.Literal
+}
+
+var _ Expression = &StringLiteral{}
+
+//////////////////////////////////////////
 // 表达式 结构
 //////////////////////////////////////////
 
@@ -85,26 +178,6 @@ func (i *Identifier) expressionNode() {
 }
 
 var _ Expression = &Identifier{}
-
-type IntegerLiteral struct {
-	Token token.Token
-	Value int64
-}
-
-func (i *IntegerLiteral) TokenLiteral() string {
-	return i.Token.Literal
-}
-
-func (i *IntegerLiteral) String() string {
-	return i.Token.Literal
-}
-
-func (i *IntegerLiteral) expressionNode() {
-	//TODO implement me
-	panic("implement me")
-}
-
-var _ Expression = &IntegerLiteral{}
 
 type PrefixExpression struct {
 	Token    token.Token
@@ -160,26 +233,6 @@ func (i *InfixExpression) expressionNode() {
 
 var _ Expression = &InfixExpression{}
 
-type Boolean struct {
-	Token token.Token
-	Value bool
-}
-
-func (b *Boolean) TokenLiteral() string {
-	return b.Token.Literal
-}
-
-func (b *Boolean) String() string {
-	return b.Token.Literal
-}
-
-func (b *Boolean) expressionNode() {
-	//TODO implement me
-	panic("implement me")
-}
-
-var _ Expression = &Boolean{}
-
 type IfExpression struct {
 	Token       token.Token
 	Condition   Expression
@@ -209,39 +262,6 @@ func (i *IfExpression) expressionNode() {
 }
 
 var _ Expression = &IfExpression{}
-
-type FunctionLiteral struct {
-	Token      token.Token // func token
-	Parameters []*Identifier
-	Body       *BlockStatement
-}
-
-func (f *FunctionLiteral) TokenLiteral() string {
-	return f.Token.Literal
-}
-
-func (f *FunctionLiteral) String() string {
-	var (
-		out    bytes.Buffer
-		params []string
-	)
-	for _, p := range f.Parameters {
-		params = append(params, p.String())
-	}
-	out.WriteString(f.TokenLiteral())
-	out.WriteString("(")
-	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(")")
-	out.WriteString(f.Body.String())
-	return out.String()
-}
-
-func (f *FunctionLiteral) expressionNode() {
-	//TODO implement me
-	panic("implement me")
-}
-
-var _ Expression = &FunctionLiteral{}
 
 type CallExpression struct {
 	Token     token.Token // token () is call

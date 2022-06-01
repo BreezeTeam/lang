@@ -585,3 +585,31 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	}
 	t.FailNow()
 }
+
+func TestStringLiteralParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			`"hello world"`,
+			"hello world",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := NewParser(lexer.NewLexer(tt.input))
+			program := p.ProgramParser()
+			checkParserErrors(t, p)
+			if program == nil {
+				t.Errorf("`%s` parser result is nil", tt.input)
+			} else {
+				if program.String() != tt.expected {
+					t.Errorf("`%s` parser Statement is %s ,want %s", tt.input, program.String(), tt.expected)
+				} else {
+					t.Logf("`%s` => `%s`", tt.input, program.String())
+				}
+			}
+		})
+	}
+}

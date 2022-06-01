@@ -16,6 +16,7 @@ const (
 	RETURN_OBJ   = "RETURN"
 	ERROR_OBJ    = "ERROR"
 	FUNCTION_OBJ = "FUNCTION"
+	STRING_OBJ   = "STRING"
 )
 
 // Object 对象接口
@@ -97,3 +98,12 @@ func (f *Function) Inspect() string {
 }
 
 var _ Object = &Function{}
+
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType { return STRING_OBJ }
+func (s *String) Inspect() string  { return s.Value }
+
+var _ Object = &String{}

@@ -164,43 +164,43 @@ func TestErrorHandler(t *testing.T) {
 	}{
 		{
 			"5 + true;",
-			"type not match:INTEGER + BOOLEAN",
+			"Error:type not match:INTEGER + BOOLEAN",
 		},
 		{
 			"5 + true; 5;",
-			"type not match:INTEGER + BOOLEAN",
+			"Error:type not match:INTEGER + BOOLEAN",
 		},
 		{
 			"-true",
-			"unknown operator:-BOOLEAN",
+			"Error:unknown operator:-BOOLEAN",
 		},
 		{
 			"true + false;",
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{
 			"5; true + false; 5",
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{
 			"if (10 > 1) { true + false; }",
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{
 			"if (10 > true) { true + false; }",
-			"type not match:INTEGER > BOOLEAN",
+			"Error:type not match:INTEGER > BOOLEAN",
 		},
 		{
 			"return true+false;",
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{
 			"return (true+false)+(true+false);",
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{
 			"return -(true+false);",
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{`
 if (10 > 1) {
@@ -209,7 +209,7 @@ return true + false;
 }
 return 1;
 }`,
-			"type not match:INTEGER > BOOLEAN",
+			"Error:type not match:INTEGER > BOOLEAN",
 		},
 		{`
 if (10 > 1) {
@@ -218,17 +218,39 @@ return true + false;
 }
 return 1;
 }`,
-			"unknown operator:BOOLEAN + BOOLEAN",
+			"Error:unknown operator:BOOLEAN + BOOLEAN",
 		},
 		{
 			"id",
-			"identifier not found: id",
+			"Error:identifier not found: id",
+		},
+		{`"hello world"`,
+			"hello world",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			evaluated := testEval(tt.input)
-			got := evaluated.(*object.Error).Message
+			got := evaluated.Inspect()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Eval() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func TestStringLiteral(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{`"hello world"`,
+			"hello world",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			got := evaluated.Inspect()
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Eval() = %v, want %v", got, tt.want)
 			}
