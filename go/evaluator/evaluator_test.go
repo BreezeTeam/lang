@@ -224,8 +224,8 @@ return 1;
 			"id",
 			"Error:identifier not found: id",
 		},
-		{`"hello world"`,
-			"hello world",
+		{`"hello" - "world"`,
+			"Error:unknown operator:STRING - STRING",
 		},
 	}
 	for _, tt := range tests {
@@ -244,6 +244,9 @@ func TestStringLiteral(t *testing.T) {
 		want  string
 	}{
 		{`"hello world"`,
+			"hello world",
+		},
+		{`"hello"+" "+"world"`,
 			"hello world",
 		},
 	}
