@@ -613,3 +613,31 @@ func TestStringLiteralParsing(t *testing.T) {
 		})
 	}
 }
+
+func TestArraysLiteralParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			`[1,2*2,3+3]`,
+			"[1,(2 * 2),(3 + 3)]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := NewParser(lexer.NewLexer(tt.input))
+			program := p.ProgramParser()
+			checkParserErrors(t, p)
+			if program == nil {
+				t.Errorf("`%s` parser result is nil", tt.input)
+			} else {
+				if program.String() != tt.expected {
+					t.Errorf("`%s` parser Statement is %s ,want %s", tt.input, program.String(), tt.expected)
+				} else {
+					t.Logf("`%s` => `%s`", tt.input, program.String())
+				}
+			}
+		})
+	}
+}

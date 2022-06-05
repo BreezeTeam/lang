@@ -154,6 +154,34 @@ func (s *StringLiteral) String() string {
 
 var _ Expression = &StringLiteral{}
 
+type ArrayLiteral struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+func (a *ArrayLiteral) TokenLiteral() string {
+	return a.Token.Literal
+}
+
+func (a *ArrayLiteral) String() string {
+	var out bytes.Buffer
+	elements := []string{}
+	for _, el := range a.Elements {
+		elements = append(elements, el.String())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ","))
+	out.WriteString("]")
+	return out.String()
+}
+
+func (a *ArrayLiteral) expressionNode() {
+	//TODO implement me
+	panic("implement me")
+}
+
+var _ Expression = &ArrayLiteral{}
+
 //////////////////////////////////////////
 // 表达式 结构
 //////////////////////////////////////////
