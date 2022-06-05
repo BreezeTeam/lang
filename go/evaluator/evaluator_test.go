@@ -261,6 +261,36 @@ func TestStringLiteral(t *testing.T) {
 	}
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "Error:argument to `len` not supported, got INTEGER"},
+		{`len("one", "two")`, "Error:wrong number of arguments. got=2, want=1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+			if want, ok := tt.want.(int); ok {
+				got := evaluated.(*object.Integer).Value
+				if !reflect.DeepEqual(got, int64(want)) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			} else {
+				got := evaluated.Inspect()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			}
+
+		})
+	}
+}
+
 func testEval(input string) object.Object {
 	l := lexer.NewLexer(input)
 	p := parser.NewParser(l)
