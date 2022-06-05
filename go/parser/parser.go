@@ -39,6 +39,7 @@ const (
 	PRODUCT // *
 	PREFIX  // -X or !X
 	CALL    // Function(X)
+	INDEX   // array[index]
 )
 
 var Precedences = map[token.TokenType]int{
@@ -51,6 +52,7 @@ var Precedences = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 /////////////////////////////////////////////////////////////
@@ -249,6 +251,7 @@ func (p *Parser) registerExpressionParseFunc() {
 	p.registerInfix(token.LT, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
+	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 }
 
 // parseIdentifiers  标识符解析器
@@ -411,6 +414,21 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 		return nil
 	}
 	return list
+}
+
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	expression := &ast.IndexExpression{Token: p.curToken, Left: left}
+	// 当前token是[
+	// 推进token
+	p.advanceTokens()
+	expression.Index = p.parseExpression(LOWEST)
+	// 此时 index 部分的 expression 应该完成
+	// 跳过最后的 ]，如果没有]，那么有问题，应该返回nil
+	if !p.expectNextToken(token.RBRACKET) {
+		return nil
+	}
+	return expression
+
 }
 
 /////////////////////////////////////////////////////////////
