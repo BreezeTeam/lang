@@ -61,6 +61,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
+	case *ast.FunctionLiteral:
+		return &object.Function{Parameters: node.Parameters, Body: node.Body, Env: env}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
+	case *ast.ArrayLiteral:
+		elements := evalExpression(node.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
 	case *ast.PrefixExpression:
 		return evalPrefixExpression(node, env)
 	case *ast.InfixExpression:
@@ -71,8 +81,18 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalStatements(node.Statement, env)
 	case *ast.ReturnStatement:
 		return &object.Return{Value: Eval(node.ReturnValue, env)}
-	case *ast.FunctionLiteral:
-		return &object.Function{Parameters: node.Parameters, Body: node.Body, Env: env}
+	case *ast.IndexExpression:
+		//先得到array
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+		// 计算索引
+		index := Eval(node.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(left, index)
 	case *ast.CallExpression:
 		//先得到 function 对象
 		function := Eval(node.Function, env)
@@ -91,11 +111,30 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 		env.Set(node.Name.Value, val)
-	case *ast.StringLiteral:
-		return &object.String{Value: node.Value}
 	}
 
 	return nil
+}
+
+// evalIndexExpression 根据 右值 从左值中获取对应位置的元素
+func evalIndexExpression(left object.Object, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, index)
+	default:
+		return newError("index operator not supported: %s", left.Type())
+	}
+}
+
+// evalArrayIndexExpression 将左值转为array 右值转为int，并且获取对应的元素
+func evalArrayIndexExpression(left object.Object, index object.Object) object.Object {
+	arrayObj := left.(*object.Array)
+	idx := index.(*object.Integer)
+	max := int64(len(arrayObj.Elements) - 1)
+	if idx.Value < 0 || idx.Value > max {
+		return NULL
+	}
+	return arrayObj.Elements[idx.Value]
 }
 
 // applyFunction 通过args传递给function，实现函数调用

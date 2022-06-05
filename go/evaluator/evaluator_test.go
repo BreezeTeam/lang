@@ -261,6 +261,83 @@ func TestStringLiteral(t *testing.T) {
 	}
 }
 
+func TestArrayLiteral(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{"[1,2+1,3*3]",
+			"[1, 3, 9]",
+		},
+		{"[1,2+1,3*3][0]",
+			"1",
+		},
+		{"[1,2+1,3*3][1]",
+			"3",
+		},
+		{"[1,2+1,3*3][3-1]",
+			"9",
+		},
+		{
+			"[1, 2, 3][0]", 1,
+		},
+		{
+			"[1, 2, 3][1]", 2,
+		},
+		{
+			"[1, 2, 3][2]", 3,
+		},
+		{
+			"let i = 0; [1][i];", 1,
+		},
+		{
+			"[1, 2, 3][1 + 1];", 3,
+		},
+		{
+			"let myArray = [1, 2, 3]; myArray[2];", 3,
+		},
+		{
+			"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6,
+		},
+		{
+			"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2,
+		},
+		{
+			"[1, 2, 3][3]",
+			nil,
+		},
+		{
+			"[1, 2, 3][-1]",
+			nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+
+			if tt.want == nil {
+				got := evaluated
+				if !reflect.DeepEqual(got, NULL) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+				return
+			}
+
+			if want, ok := tt.want.(int); ok {
+				got := evaluated.(*object.Integer).Value
+				if !reflect.DeepEqual(got, int64(want)) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			} else {
+				got := evaluated.Inspect()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
+
 func TestBuiltinFunctions(t *testing.T) {
 	tests := []struct {
 		input string
