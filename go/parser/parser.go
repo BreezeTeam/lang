@@ -238,6 +238,7 @@ func (p *Parser) registerExpressionParseFunc() {
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -368,41 +369,48 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 		Function: function,
 	}
 	// 此时 当前 token 为？
-	expression.Arguments = p.parseCallArguments()
+	expression.Arguments = p.parseExpressionList(token.RPAREN)
 	return expression
 }
 
-// parseCallArguments 解析调用参数
-func (p *Parser) parseCallArguments() []ast.Expression {
-	var args []ast.Expression
+// parseStringLiteral 解析String 字面量
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+// parseArrayLiteral  解析array
+func (p *Parser) parseArrayLiteral() ast.Expression {
+	array := ast.ArrayLiteral{Token: p.curToken}
+	array.Elements = p.parseExpressionList(token.RBRACKET)
+	return &array
+}
+
+// parseExpressionList  解析表达式列表
+func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
+	var list []ast.Expression
 	//推进下一个token
 	//开始时，当前的token为（
 	//如果下一个是 )，则切换并退出
-	if p.expectNextToken(token.RPAREN) {
+	if p.expectNextToken(end) {
 		p.advanceTokens()
-		return args
+		return list
 	}
 	//否则的话，开始 调用参数列表的解析
 	p.advanceTokens() //获取当前这一个非)的token
 
 	// 从下一个token 开始解析 表达式
-	args = append(args, p.parseExpression(LOWEST))
+	list = append(list, p.parseExpression(LOWEST))
 	//然后就会遇见,;如果下一个是分隔符，那么就跳过，然后继续装载expression
 	for p.expectNextToken(token.COMMA) {
 		p.advanceTokens() //获取当前这一个非)的token
-		args = append(args, p.parseExpression(LOWEST))
+		list = append(list, p.parseExpression(LOWEST))
 	}
 	//此时当前token是最后一个标识符
 	//跳过最后的),如果没有)，则有问题，应该报错
-	if !p.expectNextToken(token.RPAREN) {
+	if !p.expectNextToken(end) {
 		return nil
 	}
-	return args
-}
-
-// parseStringLiteral
-func (p *Parser) parseStringLiteral() ast.Expression {
-	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
+	return list
 }
 
 /////////////////////////////////////////////////////////////

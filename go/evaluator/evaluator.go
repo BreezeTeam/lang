@@ -100,14 +100,18 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 // applyFunction 通过args传递给function，实现函数调用
 func applyFunction(function object.Object, args []object.Object) object.Object {
-	if fn, ok := function.(*object.Function); ok {
+	switch fn := function.(type) {
+	case *object.Function:
 		//拷贝一个 环境，这样就可以拷贝调用时的环境了，顺便把
 		extendEnv := extendFunctionENV(fn, args)
 		evaluated := Eval(fn.Body, extendEnv)
 		return unwrapReturnValue(evaluated)
-
+	case *object.Builtin:
+		//内置函数
+		return fn.Fn(args...)
+	default:
+		return newError("not a function:%s", function.Type())
 	}
-	return newError("not a function:%s", function.Type())
 }
 
 // unwrapReturnValue 将函数调用结果 解开，并返回结果;如果不是return，则直接返回最后的结果
@@ -140,12 +144,14 @@ func evalExpression(exps []ast.Expression, env *object.Environment) []object.Obj
 }
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
-	if val, ok := env.Get(node.Value); !ok {
-		return newError("identifier not found: " + node.Value)
-	} else {
+	if val, ok := env.Get(node.Value); ok {
 		return val
 	}
+	if builtin, ok := builtins[node.Value]; ok {
+		return builtin
+	}
 
+	return newError("identifier not found: " + node.Value)
 }
 
 // evalIfExpression  eval if语句
