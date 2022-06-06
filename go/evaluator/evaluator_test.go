@@ -310,6 +310,37 @@ func TestArrayLiteral(t *testing.T) {
 			"[1, 2, 3][-1]",
 			nil,
 		},
+		{
+			`let map = func(arr, f) {
+						let iter = func(arr, accumulated) {
+							if (len(arr) == 0) {
+								accumulated
+							} else {
+								iter(rest(arr), push(accumulated, f(first(arr)))); }
+							};
+						iter(arr, []);
+					};
+					let a = [1, 2, 3, 4];
+					let double = func(x) { x * 2 };
+					map(a, double);`,
+			"[2, 4, 6, 8]",
+		},
+		{
+			`let reduce = func(arr, initial, f) {
+						let iter = func(arr, result) {
+							if (len(arr) == 0) {
+								result
+							} else {
+								iter(rest(arr), f(result, first(arr))); }
+							};
+							iter(arr, initial);
+						};
+						let sum = func(arr) {
+							reduce(arr, 0, func(initial, el) { initial + el });
+						};
+						sum([1, 2, 3, 4, 5]);`,
+			15,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
