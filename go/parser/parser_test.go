@@ -635,6 +635,14 @@ func TestArraysLiteralParsing(t *testing.T) {
 			`[1,2*2,3+3][1+1]`,
 			"([1, (2 * 2), (3 + 3)][(1 + 1)])",
 		},
+		{
+			"len([])",
+			"len([])",
+		},
+		{
+			"[]",
+			"[]",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {

@@ -163,6 +163,9 @@ func unwrapReturnValue(evaluated object.Object) object.Object {
 
 func extendFunctionENV(function *object.Function, args []object.Object) *object.Environment {
 	env := object.NewEnclosedEnvironment(function.Env)
+	if len(args) != len(function.Parameters) {
+		return env
+	}
 	for idx, param := range function.Parameters {
 		env.Set(param.Value, args[idx])
 	}

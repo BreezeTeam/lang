@@ -395,7 +395,6 @@ func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	//开始时，当前的token为（
 	//如果下一个是 )，则切换并退出
 	if p.expectNextToken(end) {
-		p.advanceTokens()
 		return list
 	}
 	//否则的话，开始 调用参数列表的解析

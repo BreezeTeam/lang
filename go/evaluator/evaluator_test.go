@@ -311,7 +311,12 @@ func TestArrayLiteral(t *testing.T) {
 			nil,
 		},
 		{
-			`let map = func(arr, f) {
+			"len([])",
+			0,
+		},
+		{
+			`
+					let map = func(arr, f) {
 						let iter = func(arr, accumulated) {
 							if (len(arr) == 0) {
 								accumulated
