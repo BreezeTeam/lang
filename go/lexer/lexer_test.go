@@ -29,6 +29,7 @@ if (5 < 10) {
 "string1"
 "str str";
 [1,2];
+{"key":"value"};
 `
 
 	tests := []struct {
@@ -116,6 +117,12 @@ if (5 < 10) {
 		{token.COMMA, ","},
 		{token.INT, "2"},
 		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
+		{token.LBRACE, "{"},
+		{token.STRING, "key"},
+		{token.COLON, ":"},
+		{token.STRING, "value"},
+		{token.RBRACE, "}"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
