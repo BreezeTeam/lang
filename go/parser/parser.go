@@ -106,8 +106,6 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLetStatement()
 	case token.RETURN:
 		return p.parseReturnStatement()
-	case token.LBRACE:
-		return p.parseBlockStatement()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -241,6 +239,7 @@ func (p *Parser) registerExpressionParseFunc() {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
@@ -299,14 +298,14 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	expression.Condition = p.parseExpression(LOWEST)
 	//当前是），应推进到{
 	if p.expectNextToken(token.LBRACE) {
-		expression.Consequence = (p.parseStatement()).(*ast.BlockStatement)
+		expression.Consequence = p.parseBlockStatement()
 	} else {
 		return expression
 	}
 	if p.expectNextToken(token.ELSE) {
 		//下一个是），应推进到{
 		if p.expectNextToken(token.LBRACE) {
-			expression.Alternative = (p.parseStatement()).(*ast.BlockStatement)
+			expression.Alternative = p.parseBlockStatement()
 		} else {
 			return expression
 		}
@@ -328,7 +327,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	//解析完成（），开始解析{}
 	//推进到{
 	if p.expectNextToken(token.LBRACE) {
-		functionLiteral.Body = (p.parseStatement()).(*ast.BlockStatement)
+		functionLiteral.Body = p.parseBlockStatement()
 	} else {
 		return nil
 	}
@@ -428,6 +427,36 @@ func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 	}
 	return expression
 
+}
+
+// parseHashLiteral 解析hash literal
+func (p *Parser) parseHashLiteral() ast.Expression {
+	hash := &ast.HashLiteral{Token: p.curToken}
+	hash.Pairs = make(map[ast.Expression]ast.Expression)
+	//如果下一个token 不是 token.RBRACE
+	for !p.nextTokenIs(token.RBRACE) {
+		//推进token
+		p.advanceTokens()
+		key := p.parseExpression(LOWEST)
+		// 如果下一个 不是 COLON，那么就有问题，返回nil
+		if !p.expectNextToken(token.COLON) {
+			return nil
+		}
+		//此时 current 为 COLON，推进到下一个token
+		p.advanceTokens()
+		value := p.parseExpression(LOWEST)
+		hash.Pairs[key] = value
+
+		// 如果下一个 即不是 } 又不是,。那么有问题，返回nil
+		// 并且如果是 ,。会使用expectNextToken进行跳过，以便开始下一次循环
+		if !p.nextTokenIs(token.RBRACE) && !p.expectNextToken(token.COMMA) {
+			return nil
+		}
+	}
+	if !p.expectNextToken(token.RBRACE) {
+		return nil
+	}
+	return hash
 }
 
 /////////////////////////////////////////////////////////////

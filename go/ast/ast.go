@@ -149,7 +149,7 @@ func (s *StringLiteral) TokenLiteral() string {
 }
 
 func (s *StringLiteral) String() string {
-	return s.Token.Literal
+	return `"` + s.Token.Literal + `"`
 }
 
 var _ Expression = &StringLiteral{}
@@ -181,6 +181,36 @@ func (a *ArrayLiteral) expressionNode() {
 }
 
 var _ Expression = &ArrayLiteral{}
+
+type HashLiteral struct {
+	Token token.Token
+	Pairs map[Expression]Expression
+}
+
+func (h *HashLiteral) TokenLiteral() string {
+	return h.Token.Literal
+}
+
+func (h *HashLiteral) String() string {
+	var (
+		out   bytes.Buffer
+		pairs []string
+	)
+	for k, v := range h.Pairs {
+		pairs = append(pairs, k.String()+":"+v.String())
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+
+func (h *HashLiteral) expressionNode() {
+	//TODO implement me
+	panic("implement me")
+}
+
+var _ Expression = &HashLiteral{}
 
 //////////////////////////////////////////
 // 表达式 结构

@@ -601,7 +601,7 @@ func TestStringLiteralParsing(t *testing.T) {
 	}{
 		{
 			`"hello world"`,
-			"hello world",
+			`"hello world"`,
 		},
 	}
 	for _, tt := range tests {
@@ -642,6 +642,41 @@ func TestArraysLiteralParsing(t *testing.T) {
 		{
 			"[]",
 			"[]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := NewParser(lexer.NewLexer(tt.input))
+			program := p.ProgramParser()
+			checkParserErrors(t, p)
+			if program == nil {
+				t.Errorf("`%s` parser result is nil", tt.input)
+			} else {
+				if program.String() != tt.expected {
+					t.Errorf("`%s` parser Statement is %s ,want %s", tt.input, program.String(), tt.expected)
+				} else {
+					t.Logf("`%s` => `%s`", tt.input, program.String())
+				}
+			}
+		})
+	}
+}
+func TestHashLiteralParsing(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			`{"one":1,"two":2}`,
+			`{"one":1, "two":2}`,
+		},
+		{
+			`{"one":1+1,"two":2*3}`,
+			`{"one":(1 + 1), "two":(2 * 3)}`,
+		},
+		{
+			`{}`,
+			`{}`,
 		},
 	}
 	for _, tt := range tests {
