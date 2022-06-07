@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"lang/ast"
 	"strings"
 )
@@ -19,6 +20,7 @@ const (
 	STRING_OBJ   = "STRING"
 	BUILTIN_OBJ  = "BUILTIN"
 	ARRAY_OBJ    = "ARRAY"
+	HASH_OBJ     = "HASH"
 )
 
 // Object 对象接口
@@ -141,3 +143,63 @@ func (a *Array) Inspect() string {
 }
 
 var _ Object = &Array{}
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+// Hashable 添加一种新的接口，实现了HashKey 方法的结构，为可hash结构
+type Hashable interface {
+	HashKey() HashKey
+}
+
+// HashKey 为 Boolean 类型添加 HashKey 方法
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+	return HashKey{Type: b.Type(), Value: value}
+}
+
+// HashKey 为 Integer 类型添加 HashKey 方法
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+}
+
+// HashKey 为 String 类型 添加 HashKey 方法
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h Hash) Type() ObjectType { return HASH_OBJ }
+func (h Hash) Inspect() string {
+	var (
+		out   bytes.Buffer
+		pairs []string
+	)
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+
+var _ Object = &Hash{}
