@@ -2,7 +2,10 @@
 // @Author Euraxluo  9:21:00
 package evaluator
 
-import "lang/object"
+import (
+	"fmt"
+	"lang/object"
+)
 
 var builtins = map[string]*object.Builtin{
 	"len": &object.Builtin{
@@ -20,6 +23,16 @@ var builtins = map[string]*object.Builtin{
 	"push": &object.Builtin{
 		Fn: push,
 	},
+	"print": &object.Builtin{
+		Fn: output,
+	},
+}
+
+func output(args ...object.Object) object.Object {
+	for _, arg := range args {
+		fmt.Println(arg.Inspect())
+	}
+	return NULL
 }
 
 func push(args ...object.Object) object.Object {
