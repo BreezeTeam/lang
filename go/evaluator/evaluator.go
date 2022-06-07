@@ -71,6 +71,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
+	case *ast.HashLiteral:
+		return evalHashLiteral(node, env)
 	case *ast.PrefixExpression:
 		return evalPrefixExpression(node, env)
 	case *ast.InfixExpression:
@@ -116,14 +118,63 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	return nil
 }
 
+// evalHashLiteral 根据ast节点，解析得到hash 对象
+func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+	for keyNode, valueNode := range node.Pairs {
+		// eval key
+		key := Eval(keyNode, env)
+		if isError(key) {
+			return key
+		}
+		// 判断key 是否是一个可hash 对象
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return newError("unusable as hash key: %s", key.Type())
+		}
+		// eval value
+		value := Eval(valueNode, env)
+		if isError(value) {
+			return value
+		}
+
+		// 获取 hash key
+		hashed := hashKey.HashKey()
+
+		//装载pair
+		pairs[hashed] = object.HashPair{Key: key, Value: value}
+	}
+	return &object.Hash{Pairs: pairs}
+}
+
 // evalIndexExpression 根据 右值 从左值中获取对应位置的元素
 func evalIndexExpression(left object.Object, index object.Object) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExpression(left, index)
 	default:
 		return newError("index operator not supported: %s", left.Type())
 	}
+}
+
+// evalHashIndexExpression 将左值转为 hash 右值转为int，并且获取对应的元素
+func evalHashIndexExpression(left object.Object, index object.Object) object.Object {
+	// 将左值转为hash对象
+	hashObj := left.(*object.Hash)
+	// 断言：index 是否为可hash 对象
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return newError("unusable as hash key: %s", index.Type())
+	}
+
+	// 将index 得到的key 进行 hash，并从原生的mapping 索引
+	pair, ok := hashObj.Pairs[key.HashKey()]
+	if !ok {
+		return NULL
+	}
+	return pair.Value
 }
 
 // evalArrayIndexExpression 将左值转为array 右值转为int，并且获取对应的元素

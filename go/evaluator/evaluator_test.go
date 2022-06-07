@@ -227,6 +227,10 @@ return 1;
 		{`"hello" - "world"`,
 			"Error:unknown operator:STRING - STRING",
 		},
+		{
+			`{"name": "Monkey"}[func(x) { x }];`,
+			"Error:unusable as hash key: FUNCTION",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
@@ -244,10 +248,10 @@ func TestStringLiteral(t *testing.T) {
 		want  string
 	}{
 		{`"hello world"`,
-			"hello world",
+			`"hello world"`,
 		},
 		{`"hello"+" "+"world"`,
-			"hello world",
+			`"hello world"`,
 		},
 	}
 	for _, tt := range tests {
@@ -396,6 +400,78 @@ func TestBuiltinFunctions(t *testing.T) {
 			} else {
 				got := evaluated.Inspect()
 				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			}
+
+		})
+	}
+}
+
+func TestHashLiterals(t *testing.T) {
+	tests := []struct {
+		input string
+		want  interface{}
+	}{
+		{
+			`let two = "two";
+				{
+					"one": 10 - 9,
+					two: 1 + 1,
+					"thr" + "ee": 6 / 2,
+					4: 4,
+					true: 5,
+					false: 6
+				}`,
+			"skip",
+		},
+		{
+			`{"foo": 5}["foo"]`, 5,
+		},
+		{
+			`{"foo": 5}["bar"]`,
+			nil,
+		},
+		{
+			`let key = "foo"; {"foo": 5}[key]`, 5,
+		},
+		{
+			`{}["foo"]`,
+			nil,
+		},
+		{
+			`{5: 5}[5]`, 5,
+		},
+		{
+			`{true: 5}[true]`, 5,
+		},
+		{
+			`{false: 5}[false]`, 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			evaluated := testEval(tt.input)
+
+			if tt.want == nil {
+				got := evaluated
+				if !reflect.DeepEqual(got, NULL) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+				return
+			}
+
+			if want, ok := tt.want.(int); ok {
+				got := evaluated.(*object.Integer).Value
+				if !reflect.DeepEqual(got, int64(want)) {
+					t.Errorf("Eval() = %v, want %v", got, tt.want)
+				}
+			} else {
+				got := evaluated.Inspect()
+
+				if tt.want == "skip" {
+					t.Logf("Eval() = %v", got)
+				} else if !reflect.DeepEqual(got, tt.want) {
 					t.Errorf("Eval() = %v, want %v", got, tt.want)
 				}
 			}

@@ -678,6 +678,10 @@ func TestHashLiteralParsing(t *testing.T) {
 			`{}`,
 			`{}`,
 		},
+		{
+			`{"name": "Monkey"}[func(x) { x }];`,
+			`({"name":"Monkey"}[func(x) { x } ])`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
