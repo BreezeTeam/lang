@@ -164,7 +164,7 @@ fn main() {
 
 ```
 
-## fmt Display
+## fmt Display( {} )
 
 自己实现Display 和 Debug 进行比较
 
@@ -223,5 +223,214 @@ fn main() {
 }
 ```
 
+## ?宏 和 try！宏
 
+？操作符：对于某个语句进行尝试，观察是否出错，如果发生错误，返回相应错误，否则继续执行后面的语句
 
+```rust
+use std::fmt::{Display, Formatter};
+
+struct List(Vec<i32>);
+
+impl Display for List {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        for (i, v) in self.0.iter().enumerate() {
+            if i != 0 {
+                write!(f, ", ")?
+            }
+            write!(f, "{}", v)?
+        }
+        write!(f, "]")
+    }
+}
+
+fn main() {
+    let x = List(vec![1, 2, 3, 4]);
+    println!("{}", x)
+}
+```
+
+## 字面量
+
+```rust
+fn main() {
+    // 整数相加
+    println!("1 + 2 = {}", 1u32 + 2);
+
+    // 整数相减
+    println!("1 - 2 = {}", 1i32 - 2);
+    // 试一试 ^ 尝试将 `1i32` 改为 `1u32`，体会为什么类型声明这么重要
+
+    // 短路求值的布尔逻辑
+    println!("true AND false is {}", true && false);
+    println!("true OR false is {}", true || false);
+    println!("NOT true is {}", !true);
+
+    // 位运算
+    println!("0011 AND 0101 is {:04b}", 0b0011u32 & 0b0101);
+    println!("0011 OR 0101 is {:04b}", 0b0011u32 | 0b0101);
+    println!("0011 XOR 0101 is {:04b}", 0b0011u32 ^ 0b0101);
+    println!("1 << 5 is {}", 1u32 << 5);
+    println!("0x80 >> 2 is 0x{:x}", 0x80u32 >> 2);
+
+    // 使用下划线改善数字的可读性！
+    println!("One million is written as {}", 1_000_000u32);
+
+    println!("string as {}", "xxx")
+}
+
+```
+
+## 元组
+
+```rust
+use std::fmt::{Display, Formatter};
+
+#[derive(Debug)]
+struct Matrix(f32, f32, f32, f32);
+
+// 编写display
+impl Display for Matrix {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} {})\n", self.0, self.1)?;
+        write!(f, "({} {})\n", self.2, self.3)
+    }
+}
+
+fn transpose(mat: Matrix) -> Matrix {
+    let (a, b, c, d) = (mat.0, mat.1, mat.2, mat.3);
+    Matrix(a, c, b, d)
+}
+
+fn main() {
+    let mat = Matrix(1.0, 2.0, 3.0, 4.0);
+
+    println!("{:?}", mat);
+    println!("{}", mat);
+    println!("{}", transpose(mat))
+}
+
+```
+
+## 数组和切片
+
+```rust
+use std::mem;
+
+// &[i32] 借用一个slcie
+fn analyze_slice(slice: &[i32]) {
+    println!("slice:{:?}", slice);
+    println!("sliceSize:{}", slice.len());
+}
+
+fn main() {
+    // 自动类型推导，不需要进行类型标记
+    //定长数组
+    let a1 = [1, 2, 3, 4, 5];
+    // 所有元素初始化为相同的值
+    let a2 = [true; 500];
+    println!("定长数组:{:?}", a1);
+    println!("定长数组:{:?}", a2);
+
+    // 获取数组长度
+    println!("数组长度：{}", a1.len());
+
+    //数组在栈中分配
+    // mem:size_of_val 返回指向值的大小(以字节为单位)。
+    println!("{}", mem::size_of_val(&a2));
+    // 以字节为单位返回类型的大小。
+    println!("{}", mem::size_of::<bool>());
+
+    //slice
+    //数组自动被借用为slice
+    analyze_slice(&a1);
+    analyze_slice(&a1[1..4]);
+    analyze_slice(&a1[0..1]);
+    //下标越界时会panic
+}
+```
+
+## 结构体
+
+```rust
+use std::fmt;
+use std::fmt::Display;
+
+#[derive(Debug)]
+struct Person {
+    name: String,
+    age: i32,
+}
+
+impl Display for Person {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} is {} years old", self.name, self.age)
+    }
+}
+
+// 带有两个字段的结构体
+struct Point {
+    x: f32,
+    y: f32,
+}
+
+impl Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+//单元结构体
+struct Unit;
+
+//元组结构体
+#[derive(Debug)]
+struct Pair(i32, i32);
+
+//结构体可以作为另一个结构体的字段
+struct Rectangle {
+    top: Point,
+    bottom: Point,
+}
+
+fn main() {
+    // 初始化字段并创建结构体
+    let name = String::from("test");
+    let age = 27;
+    let person = Person { name, age };
+    println!("Hello, {}!", person.name);
+    println!("{}", person);
+
+    // 实例化结构体 point
+    let point: Point = Point { x: 10.0, y: 20.0 };
+    println!("{}", point);
+
+    // 使用结构体更新语法创建新的point
+    let new_point = Point { x: 5.2, ..point };
+    println!("{}", new_point);
+
+    //使用let 绑定 解构 point
+    let Point { x: x1, y: y1 } = new_point;
+    println!("({},{})", x1, y1);
+
+    //在结构体的实例化中使用结构体的实例化
+    let _rectangle = Rectangle {
+        top: Point { x: 10.0, y: 20.0 },
+        bottom: Point { x: 20.0, y: 30.0 },
+    };
+
+    // 实力一个单元结构体
+    let _unit = Unit;
+
+    // 使用元组
+    let pair = Pair(1, 2);
+    println!("{:?}", pair);
+    println!("{:?} and {:?}", pair.0, pair.1);
+
+    // 解构一个 元组结构体
+    let Pair(first, second) = pair;
+    println!("{:?} , {:?}", first, second);
+}
+
+```
