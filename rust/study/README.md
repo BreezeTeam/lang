@@ -434,3 +434,159 @@ fn main() {
 }
 
 ```
+
+## enum
+
+```rust
+use std::fmt::{Display, Formatter};
+
+use crate::Status::Poor;
+
+// 该属性用于隐藏
+#[allow(dead_code)]
+
+// 1. 创建一个Event 对事件进行分类
+enum WebEvent {
+    // 单元结构体
+    PageLoad,
+    PageUnload,
+
+    // 元组结构体
+    KeyPress(char),
+    Paste(String),
+    // 普通结构体
+    Click { x: i64, y: i64 },
+}
+
+// 2. 创建一个类型别名
+enum TooLongEnumName {
+    ADD,
+    SUB,
+}
+
+// 创建一个短一点的类型别名
+type operations = TooLongEnumName;
+
+// 3. 使用use
+enum Status {
+    Rich,
+    Poor,
+}
+
+// 为枚举实现 Display
+impl Display for Status {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Status::Rich => write!(f, "Rich"),
+            Status::Poor => write!(f, "Poor"),
+        }
+    }
+}
+
+enum Work {
+    _996,
+    _007,
+}
+
+// 4.C风格，具有显式辨别值
+
+enum Color {
+    Red = 0xff0000,
+    Green = 0x00ff00,
+    Blue = 0x0000ff,
+}
+
+// 为枚举实现 Display
+impl Display for Work {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Work::_007 => write!(f, "work_status: 996"),
+            Work::_996 => write!(f, "work_status: 007"),
+        }
+    }
+}
+
+fn main() {
+    let pressed = WebEvent::KeyPress('X');
+
+    let pasted = WebEvent::Paste(String::from("hello"));
+
+    // 从一个字符串切边中创建一个具有所有权的String
+    let pasted2 = WebEvent::Paste("hello world".to_owned());
+
+    let click = WebEvent::Click { x: 1, y: 2 };
+
+    let load = WebEvent::PageLoad;
+    let unload = WebEvent::PageUnload;
+
+    // 打印
+    inspect(pressed);
+    inspect(pasted);
+    inspect(pasted2);
+    inspect(click);
+    inspect(load);
+    inspect(unload);
+
+    let opt = operations::ADD;
+    match opt {
+        operations::ADD | operations::SUB => {
+            println!("使用别名")
+        }
+    }
+
+    use Work::*;
+    println!("{}", _007);
+    println!("{}", _996);
+
+    // 好像不用use 也可以
+
+    let poor = Poor;
+    println!("{}", poor);
+
+    use Status::Rich;
+    let rich = Rich;
+    println!("{}", rich);
+
+    // 使用use
+    use Color::*;
+    println!("Color Red is {}", Red as i32);
+    println!("Color Red is {}", Green as i32);
+}
+
+fn inspect(event: WebEvent) {
+    match event {
+        WebEvent::PageLoad => println!("page not Load"),
+        WebEvent::PageUnload => println!("page not Unload"),
+        // 解构
+        WebEvent::KeyPress(c) => println!("key pressed {}", c),
+        WebEvent::Paste(s) => println!("paste {}", s),
+        // 将 click 解构
+        WebEvent::Click { x, y } => println!("click x={},y={}", x, y),
+    }
+}
+
+
+```
+
+## 常量
+
+```rust
+// 不可改变的值
+const LANGUAGE: i32 = 1;
+
+static StringConst: &str = "STRINT";
+
+// 具有static生命周期的，可以是可变的变量（但是需要使用 static mut）
+static Array: [i32; 2] = [0; 2];
+
+fn main() {
+    println!("{}", LANGUAGE);
+
+    // 不能修改变量
+    // StringConst.push_str("Hello");
+    println!("{}", StringConst);
+
+    println!("{:?}", Array);
+}
+
+```
