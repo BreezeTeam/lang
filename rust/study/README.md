@@ -590,3 +590,265 @@ fn main() {
 }
 
 ```
+
+## 可变变量
+
+```rust
+fn main() {
+    let immutable_var = 1;
+    let mut mubtable_var = 1;
+
+    // 编译器会报错
+    mubtable_var += 1;
+    // immutable_var += 1;
+    println!("{}", immutable_var);
+    println!("{}", mubtable_var);
+}
+
+```
+
+## 变量遮蔽和作用域
+
+```rust
+fn main() {
+    let v1 = 1;
+    //先声明，再初始化
+    let v3;
+
+    //作用域冻结
+    let mut mutable_var = 1212;
+    {
+        let v2 = 2;
+        println!("v1:{},v2:{}", v1, v2);
+        let v1 = 3;
+        println!("v1:{},v2:{}", v1, v2);
+        //初始化
+        v3 = 4;
+
+        // 可变变量被不可变变量遮蔽
+        let mutable_var = mutable_var;
+        // 报错，被冻结
+        // mutable_var = 11;
+    }
+    // v2 被遮蔽
+    // println!("v1:{},v2:{}", v1, v2);
+
+    // 这里的值的1，因为 3被遮蔽了
+    println!("v1:{}", v1);
+
+    // 重新绑定
+    let v1 = 'a';
+    println!("v1:{}", v1);
+    let v1 = 'b';
+    println!("v1:{}", v1);
+
+    println!("v3:{}", v3);
+
+    // 冻结解除
+    mutable_var = 1212;
+    println!("mutable_var:{}", mutable_var);
+}
+
+
+
+```
+
+## 类型别名
+
+```rust
+// `NanoSecond` 是 `u64` 的新名字。
+type NanoSecond = u64;
+type Inch = u64;
+
+// 下面的属性可以屏蔽警告
+// #[allow(non_camel_case_types)]
+type u64_t = u64;
+// 试一试 ^ 移除上面那个属性
+
+fn main() {
+    // `NanoSecond` = `Inch` = `u64_t` = `u64`.
+    let nanoseconds: NanoSecond = 5 as u64_t;
+    let inches: Inch = 2 as u64_t;
+
+    // 注意类型别名*并不能*提供额外的类型安全，因为别名*并不是*新的类型。
+    println!(
+        "{} nanoseconds + {} inches = {} unit?",
+        nanoseconds,
+        inches,
+        nanoseconds + inches
+    );
+}
+
+```
+
+## 类型转换
+
+```rust
+extern crate core;
+
+#[derive(Debug)]
+struct Number {
+    value: i32,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct Number2 {
+    value: i32,
+}
+
+impl From<i32> for Number {
+    fn from(value: i32) -> Self {
+        Number { value }
+    }
+}
+
+// TryFrom 用于易出错的转换
+impl TryFrom<i32> for Number2 {
+    type Error = ();
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        if value < 0 {
+            Err(())
+        } else {
+            Ok(Number2 { value })
+        }
+    }
+}
+
+// 实现该 trait 可以将 任何类型转换为字符串
+impl ToString for Number2 {
+    fn to_string(&self) -> String {
+        format!("value:{}", self.value)
+    }
+}
+
+fn main() {
+    let num = Number::from(55);
+    println!("{:?}", num);
+
+    let intvar = 65;
+    let number: Number = intvar.into();
+    println!("{:?}", number);
+
+    // TryFrom
+    let oknum = Number2 { value: 9 };
+
+    assert_eq!(Number2::try_from(9), Ok(oknum));
+    assert_eq!(Number2::try_from(-1), Err(()));
+
+    //TryInto
+    let result: Result<Number2, ()> = 8i32.try_into();
+    assert_eq!(result, Ok(Number2 { value: 8 }));
+    let result: Result<Number2, ()> = (-32i32).try_into();
+    assert_eq!(result, Err(()));
+
+    // ToString
+    let number3 = Number2 { value: 3 };
+    println!("{}", number3.to_string());
+
+    // parse
+    let data: i32 = "5".parse().unwrap();
+    println!("{}", data);
+    let data2 = "121".parse::<i64>().unwrap();
+    println!("{}", data2);
+}
+
+```
+
+## 表达式
+
+```rust
+
+fn main() {
+    let x = 1;
+    // 代码块也是表达式，所以可以用作赋值，代码块中的最后一个表达式将赋值给适当的表达式，例如局部变量等
+    // 但是如果代码块的最后一个表达式结尾有分号，那么返回值为()
+    let y = {
+        let local = 2;
+        x + local
+    };
+    let z = {
+        let local = 3;
+        x + local;
+    };
+    println!("x:{},y:{},z:{:?}", x, y, z);
+}
+
+```
+
+## if-else
+
+```rust
+fn main() {
+    // if-else 是一个表达式，每个分支都需要返回相同的类型
+    let n = 5;
+    if n > 0 {
+        println!("n>0");
+    } else if n == 0 {
+        println!("n==0");
+    } else {
+        println!("n>0");
+    }
+
+    let new_n = {
+        if n == 0 {
+            1
+        } else {
+            // 所有分支必须返回一样的类型
+            n + 10
+        }; // 这里不能加分号，交了的话，那么 该代码块中最后一个表达式返回为()
+    }; // 这是一个表达式，需要加;
+    println!("new_n:{:?}", new_n);
+}
+
+```
+
+## loop
+
+```rust
+#![allow(unreachable_code)]
+
+fn main() {
+    let receiveInner = 'outer: loop {
+        println!("Outer Hello World!");
+
+        loop {
+            println!("inner hello world");
+
+            // 这里直接写break 是中断inner loop
+            // break; // break inner loop
+
+            // 但是如果再写一次就会报错，代码不可达，所以需要使用label 加标签
+            // break 直接跳跃到 outer，并且将值返回给outer处的表达式
+            break 'outer "loop return Value"; // break outer loop
+        }
+        println!("Outer Hello End!");
+    };
+
+    println!("End loop,receiveInner:{:?}", receiveInner);
+}
+
+```
+
+## while
+
+```rust
+
+fn main() {
+    let o = 15;
+
+    let mut n = 1;
+    while n < o + 1 {
+        if n % 15 == 0 {
+            println!("fizzbuzz");
+        } else if n % 3 == 0 {
+            println!("fizz");
+        } else if n % 5 == 0 {
+            println!("buzz");
+        } else {
+            println!("{}", n);
+        }
+        n += 1;
+    }
+}
+
+```

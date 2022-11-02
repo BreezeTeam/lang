@@ -1,17 +1,17 @@
-// 不可改变的值
-const LANGUAGE: i32 = 1;
-
-static StringConst: &str = "STRINT";
-
-// 具有static生命周期的，可以是可变的变量（但是需要使用 static mut）
-static Array: [i32; 2] = [0; 2];
-
 fn main() {
-    println!("{}", LANGUAGE);
+    let o = 15;
 
-    // 不能修改变量
-    // StringConst.push_str("Hello");
-    println!("{}", StringConst);
-
-    println!("{:?}", Array);
+    let mut n = 1;
+    while n < o + 1 {
+        if n % 15 == 0 {
+            println!("fizzbuzz");
+        } else if n % 3 == 0 {
+            println!("fizz");
+        } else if n % 5 == 0 {
+            println!("buzz");
+        } else {
+            println!("{}", n);
+        }
+        n += 1;
+    }
 }
