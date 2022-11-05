@@ -1,17 +1,33 @@
-fn main() {
-    let o = 15;
+use anyhow::Result;
+use crossbeam_channel::{bounded, select, tick, Receiver};
+use std::time::Duration;
 
-    let mut n = 1;
-    while n < o + 1 {
-        if n % 15 == 0 {
-            println!("fizzbuzz");
-        } else if n % 3 == 0 {
-            println!("fizz");
-        } else if n % 5 == 0 {
-            println!("buzz");
-        } else {
-            println!("{}", n);
+fn ctrl_channel() -> Result<Receiver<()>, ctrlc::Error> {
+    let (sender, receiver) = bounded(100);
+    ctrlc::set_handler(move || {
+        let _ = sender.send(());
+    })?;
+
+    Ok(receiver)
+}
+
+fn main() -> Result<()> {
+    // 接受ctrlc 信号
+    let ctrl_c_events = ctrl_channel()?;
+    // 周期性发出信号
+    let ticks = tick(Duration::from_secs(1));
+
+    loop {
+        select! {
+            recv(ticks) -> _ => {
+                println!("working!");
+            }
+            recv(ctrl_c_events) -> _ => {
+                println!();
+                println!("Goodbye!");
+                break;
+            }
         }
-        n += 1;
     }
+    Ok(())
 }

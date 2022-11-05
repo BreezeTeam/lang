@@ -852,3 +852,79 @@ fn main() {
 }
 
 ```
+
+## clap 命令行开发
+
+```rust
+
+use clap::Parser;
+
+// 这个文档将作为 help的description
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+// version 将打印版本号
+// bin_name 可以修改显示的软件名称
+// long_about = None 表示不显示长的 about
+// struct 中的成员都会是 参数
+// arg 标识为 option 参数
+// 没标的是argument 参数
+#[command(author, bin_name = "foo", version, about, long_about = None)]
+struct Args {
+    /// Name of the person to greet
+    #[arg(short, long)]
+    name: String,
+    /// Number of times to greet
+    #[arg(short, long, default_value_t = 1)]
+    count: u8,
+}
+
+fn main() {
+    let args = Args::parse();
+
+    for _ in 0..args.count {
+        println!("Hello {}!", args.name);
+    }
+}
+
+```
+
+## 信号接收
+
+```rust
+use std::time::Duration;
+
+use anyhow::Result;
+use crossbeam_channel::{bounded, select, tick, Receiver};
+
+fn ctrl_channel() -> Result<Receiver<()>, ctrlc::Error> {
+    let (sender, receiver) = bounded(100);
+    ctrlc::set_handler(move || {
+        let _ = sender.send(());
+    })?;
+
+    Ok(receiver)
+}
+
+fn main() -> Result<()> {
+    // 接受ctrlc 信号
+    let ctrl_c_events = ctrl_channel()?;
+    // 周期性发出信号
+    let ticks = tick(Duration::from_secs(1));
+
+    loop {
+        select! {
+            recv(ticks) -> _ => {
+                println!("working!");
+            }
+            recv(ctrl_c_events) -> _ => {
+                println!();
+                println!("Goodbye!");
+                break;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+```
