@@ -569,40 +569,73 @@ fn inspect(event: WebEvent) {
 ```
 
 ## 常量
+const：常量，没有固定的内存地址，将会在编译时被内联
+即不管在哪里使用，在使用时都是直接拷贝这段数据到相关上下文中使用
 
-```rust
+```rustuse std::collections::HashMap;
+
+
 // 不可改变的值
 const LANGUAGE: i32 = 1;
+//须显式指定数据类型。类型必须具有 'static生存期：程序初始化器(initializer)中的任何引用都必须具有 'static生存期。
+const LANGUAGE_2: &str = "this is a string";
+const LANGUAGE_3: &'static str = "this is a other string";
+// 以上两种写法是一样的
+const CONST4:i32 =1 + LANGUAGE;
 
-static StringConst: &str = "STRINT";
+// const array
+const LEFT: [&'static str; 3] = ["Hello", "World", "!"];
+// or
+const LEFT2: &'static [&'static str] = &["Hello", "World", "!"];
+
+
+// static 类似于 const ，但是它在程序中标识一个精确的内存位置
+// 静态中的调用仅限于常量函数、元组结构和元组变体
+lazy_static::lazy_static!{
+
+    // 使用 ref 关键字的原因 是 ref的语义符合 lazy_static 的实际情况
+    static ref STRING_CONST: String = String::from("STRING_CONST");
+    static ref STRING_CONST2: String = String::from("STRING_CONST2");
+    static ref MAP: HashMap<u32, u32> = HashMap::new();
+}
+static  STRING_CONST3: &str = "STRING_CONST";
+static  STRING_CONST4: &'static str = "STRING_CONST2";
+// 尝试使用 String ，但是不可行，因为String 在堆上
+// static STRING_CONST3: &String = STRING_CONST.add_assign(STRING_CONST);
+
+// 测试一下vec
+static VEC:Vec<u8> = Vec::new();
+
+// 不能使用
+// static MAP: HashMap<u32, u32> = HashMap::new();
+
+
 
 // 具有static生命周期的，可以是可变的变量（但是需要使用 static mut）
-static Array: [i32; 2] = [0; 2];
+static ARRAY: [i32; 2] = [0; 2];
 
+/// #### 离开一下
+/// 
+/// 
 fn main() {
-    println!("{}", LANGUAGE);
+    println!("LANGUAGE：{}", LANGUAGE);
+    println!("LANGUAGE_2:{}", LANGUAGE_2);
+    println!("LANGUAGE_3:{}", LANGUAGE_3);
+    println!("CONST4:{}", CONST4);
+    println!("LEFT{:?}", LEFT);
+    println!("LEFT2{:?}", LEFT2);
+    println!("LEFT2{:?}", LEFT2[0]);
 
     // 不能修改变量
     // StringConst.push_str("Hello");
-    println!("{}", StringConst);
+    println!("STRING_CONST：{}", *STRING_CONST);
+    println!("STRING_CONST2：{}", *STRING_CONST2);
+    println!("STRING_CONST3{}", STRING_CONST3);
+    println!("STRING_CONST4{}", STRING_CONST4);
 
-    println!("{:?}", Array);
-}
-
-```
-
-## 可变变量
-
-```rust
-fn main() {
-    let immutable_var = 1;
-    let mut mubtable_var = 1;
-
-    // 编译器会报错
-    mubtable_var += 1;
-    // immutable_var += 1;
-    println!("{}", immutable_var);
-    println!("{}", mubtable_var);
+    println!("ARRAY：{:?}", ARRAY);
+    println!("VEC{:?}", VEC);
+    println!("MAP{:?}", *MAP);
 }
 
 ```
@@ -925,6 +958,246 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+```
+
+### lazy_static
+使用这个宏可以创建在运行时初始化的静态
+
+可以使用外部crate 声明
+```rust
+#[macro_use]
+extern crate lazy_static;
+```
+这样会将外部的标识符绑定到当前extern 所在的作用域，
+如果放在根mod中，会自动出现在所有作用域
+其中`#[macro_use]`是复用宏
+
+```rust
+use lazy_static;
+use std::collections::HashMap;
+
+lazy_static::lazy_static! {
+    static ref HASHMAP: HashMap<u32, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert(0, "foo");
+        m.insert(1, "bar");
+        m.insert(2, "baz");
+        m
+    };
+    static ref COUNT: usize = HASHMAP.len();
+    static ref NUMBER: u32 = times_two(21);
+}
+
+fn times_two(n: u32) -> u32 { n * 2 }
+
+fn main() {
+    println!("The map has {} entries.", *COUNT);
+    println!("The entry for `0` is \"{}\".", HASHMAP.get(&0).unwrap());
+    println!("A expensive calculation on a static results in: {}.", *NUMBER);
+}
+```
+
+
+## iter and for in
+
+```rust
+fn main() {
+    // n 的值将取[0,..15],开区间
+    for n in 0..16 {
+        if (n % 15) == 0 {
+            println!("fizzbuzz")
+        } else if (n % 3) == 0 {
+            println!("fizz")
+        } else if (n % 5) == 0 {
+            println!("buzz")
+        } else {
+            println!("{}", n)
+        }
+    }
+
+    // n 的值将取[0,..16],闭区间
+    for n in 0..=16 {
+        if (n % 15) == 0 {
+            println!("fizzbuzz")
+        } else if (n % 3) == 0 {
+            println!("fizz")
+        } else if (n % 5) == 0 {
+            println!("buzz")
+        } else {
+            println!("{}", n)
+        }
+    }
+
+    // for in 解构对于集合类型将会调用给into_iter 函数
+    // 将其转换为一个迭代器，其他的方法有 iter 和iter_mut 函数。
+    let vec_1: [&str; 3] = ["hello", "world", "!"];
+    for v in vec_1.iter() {
+        // iter 将会每次迭代时进行借用，集合不会改变所有权
+        println!("item:{}", v);
+    }
+    println!("{:?}", vec_1);
+
+    // into_iter 会消耗集合，每次迭代时，会提供集合本身的数据
+    // 集合 内的数据会被move ，移动所有权到 iter
+    // **array 不会被move**
+    for v in vec_1.into_iter() {
+        println!("item:{}", v);
+        match v {
+            "!" => println!("move !"),
+            _ => println!("{}", v),
+        }
+    }
+    println!("{:?}", vec_1);
+    // 这里还能正常使用
+    for v in vec_1.iter() {
+        // iter 将会每次迭代时进行借用，集合不会改变所有权
+        println!("item:{}", v);
+    }
+
+    // 对于这种类型为啥 会被move呢，想不通啊
+
+    let names = vec!["Bob", "Frank", "Ferris"];
+    for v in names.iter() {
+        match v {
+            &"Ferris" => println!("There is a rustacean among us!"),
+            _ => println!("Hello :{}", v),
+        }
+    }
+    for v in names.into_iter() {
+        // 这里 用不用 & 都会被move
+        match &v {
+
+            &"Ferris" => println!("There is a rustacean among us!"),
+            _ => println!("Hello :{}", v),
+        }
+    }
+
+    // 此处的所有元素都被move了
+    for v in names.iter() {
+        match v {
+            &"Ferris" => println!("There is a rustacean among us!"),
+            _ => println!("Hello :{}", v),
+        }
+    }
+}
+
+```
+
+## match enum
+
+```rust
+#[allow(dead_code)]
+enum Color {
+    Name,
+    RGB(u32, u32, u32),
+    HSV(u32, u32, u32),
+}
+
+fn main() {
+    let number = 13;
+
+    // match 第一个匹配的分支被比对
+    // 并且所有可能的值都必须被覆盖
+    match number {
+        // 匹配单个值
+        1 => println!("One"),
+        // 匹配多个值
+        2 | 3 | 4 => println!("other:{}", number),
+        // 匹配一个范围
+        13..=19 => println!("区间:{}", number),
+        // 处理别的情况
+        // 该部分不能省略，也就是说，必须覆盖所有分支
+        _ => println!("{}", number),
+    }
+
+    // match 解构元组
+    let tuple = (0, -2, 3);
+    match tuple {
+        // 解构部分变量
+        (0, x, y) => println!("{},{}", x, y),
+        //省略部分变量
+        // (.., -2, ..) => println!("1 start"),
+        // 在 tuple中只能使用一次
+        (-2, ..) => println!("1 start"),
+        _ => println!("other"),
+    }
+    let rgb = Color::RGB(10, 10, 10);
+
+    // match 枚举取值
+    match rgb {
+        Color::Name => println!("name"),
+        Color::RGB(r, g, b) => println!("r:{},g:{},b:{}", r, g, b),
+        Color::HSV(h, s, v) => println!("h:{},s:{},v:{}", h, s, v),
+    }
+
+}
+
+```
+## match ,ref mut & 
+```ruststruct Refer<T1>(T1);
+fn main() {
+    println!("dereference &val");
+    // match 解引用
+    // 这里获得一个 &i32 类型，&标识取引用
+    let refer1 = Refer(&4);
+    match refer1.0 {
+        // 以下两个都能匹配到
+        val => println!("val{:?}", *val),
+        &val => println!("&{:?}", val),
+        _ => println!("_{:?}", refer1.0),
+    }
+    println!("dereference &val before  match");
+    // 匹配前解引用
+    // 那么就能匹配到 i32
+    match *refer1.0 {
+        val => println!("val{:?}", val),
+        _ => println!("_{:?}", refer1.0),
+    }
+    println!("val not quote");
+    // 一开始就不使用 引用
+    let refer1 = Refer(4);
+    match refer1.0 {
+        // 以下两个都能匹配到
+        val => println!("val{:?}", val),
+        // 对于值来说，可以通过 ref val 获取 &i32
+        ref val => println!("&{:?}", val),
+        _ => println!("_{:?}", refer1.0),
+    }
+    println!("val use ref ");
+    // 如果还想使用原来的代码，那么需要手动创建引用
+    let ref data = 4;
+    let refer1 = Refer(data);
+    match refer1.0 {
+        val => println!("val{:?}", val),
+        _ => println!("_{:?}", refer1.0),
+    }
+    println!("val use ref  and *");
+    // 匹配前解引用
+    match *refer1.0 {
+        val => println!("val{:?}", val),
+        _ => println!("_{:?}", refer1.0),
+    }
+
+    println!("val use mut ");
+    // 如果还想使用原来的代码，那么需要手动创建引用
+    let mut data = 4;
+    match data {
+        //此处创建获取了引用，需要先解引用,并且这样写，就能修改到值
+        ref mut m1 => {
+            *m1 += 10;
+            println!("ref mut val:{:?}", m1)
+        }
+        // match 时获取了值,但是这样写不会修改data
+        mut m => {
+            m += 10;
+            println!(" mut val:{:?}", m)
+        }
+        val => println!("val{:?}", val),
+        _ => println!("_{:?}", data),
+    }
+    println!("finish mut match:{:?}", data);
 }
 
 ```
