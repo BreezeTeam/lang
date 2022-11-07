@@ -1136,7 +1136,8 @@ fn main() {
 
 ```
 ## match ,ref mut & 
-```ruststruct Refer<T1>(T1);
+```rust
+struct Refer<T1>(T1);
 fn main() {
     println!("dereference &val");
     // match 解引用
@@ -1199,5 +1200,204 @@ fn main() {
     }
     println!("finish mut match:{:?}", data);
 }
+
+```
+
+
+## 卫语句
+
+```rust
+fn main() {
+    let pair = (2, -3);
+
+    match pair {
+        // if 条件部分是 卫语句 guard 用来过滤分支。
+        (x, y) if x + y == 0 => println!("x:{},y:{}", x, y),
+        _ => println!("{:?}", pair),
+    }
+}
+
+```
+
+
+## match 时进行绑定
+
+```rust
+fn main() {
+    let age = 19;
+
+    match age {
+        0 => println!("error age"),
+        // 范围匹配时 使用 s..=n 语法，使用这种方法进行的匹配无法
+        // 没办法知道年龄
+        1..=12 => println!("children"),
+        //
+        n @ 13..=18 => println!("age is {}", n),
+        n => println!("@ match var for n ,value is {}", n),
+        // _=> is  unreachable code
+        _ => println!("unknow age"),
+    }
+
+    // 使用 绑定 解构
+
+    // 解构 struct
+    struct Refer<T1>(T1);
+    let some = Refer(4);
+    match some {
+        Refer(a @ 4) => println!(" @ for {}", a),
+        _ => println!("other"),
+    }
+
+    // 可以解构 enum
+    fn some_number() -> Option<u32> {
+        Some(42)
+    }
+    let some = some_number();
+    match some {
+        Some(a @ 42) => println!(" @ for {}", a),
+        _ => println!("other"),
+    }
+
+    //再试试别的
+    #[derive(Debug)]
+    struct OtherStruct {
+        x: i32,
+        y: i32,
+    }
+
+    let s = OtherStruct { x: 3, y: 3 };
+    println!("{:?}", s);
+    match s {
+        // 这样 可以匹配成功
+        OtherStruct { x: 1, y: 2 } => println!("{:?}", s),
+
+        // 并且可以省略呢
+        OtherStruct { y: 2, .. } => println!("{:?}", s),
+
+        // 再试试 绑定
+        OtherStruct { y: m @ 3, .. } => println!("{:?}", m),
+        _ => println!("other"),
+    }
+
+    println!("match tuple");
+    // match 解构元组
+    let tuple = (-3, -2, 3);
+    match tuple {
+        // 解构部分变量
+        (0, x, y) => println!("{},{}", x, y),
+        //省略部分变量
+        // (.., -2, ..) => println!("1 start"),
+        // 在 tuple中只能使用一次
+        (-2, ..) => println!("1 start"),
+        (x @ -3, ..) => println!("use @ start :{}", x),
+        _ => println!("other"),
+    }
+
+    #[allow(dead_code)]
+    enum Color {
+        Name,
+        RGB(u32, u32, u32),
+        HSV(u32, u32, u32),
+    }
+    let rgb = Color::RGB(11, 10, 10);
+
+    // match 枚举取值
+    match rgb {
+        Color::Name => println!("name"),
+        // 这里使用match 要求 r 需要是 11
+        Color::RGB(r @ 11, g, b) => println!("@ r:{},g:{},b:{}", r, g, b),
+        Color::RGB(r , g, b) => println!("r:{},g:{},b:{}", r, g, b),
+        Color::HSV(h, s, v) => println!("h:{},s:{},v:{}", h, s, v),
+    }
+}
+
+```
+
+
+## if let 
+
+```rust
+fn main() {
+    #[derive(PartialEq)]
+    enum Foo {
+        Bar,
+        Car,
+    }
+
+    let a = Foo::Bar;
+
+    // 这个枚举 没有 实现 #[derive(PartialEq)]，所以 == 时会出错
+    if a == Foo::Bar {
+        println!("match Bar");
+    }
+
+    #[derive(Debug)]
+    enum Foo2 {
+        Bar,
+        Car,
+    }
+
+    let a = Foo2::Bar;
+    // 这个枚举 没有 实现 #[derive(PartialEq)]，所以 == 时会出错
+    // 如果 变量在前，就变成赋值了
+    if let a = Foo2::Car {
+        println!("match Bar {:?}", a);
+    } else {
+        println!("not match");
+    }
+
+    // 使用 if let 匹配成功
+    let b = Foo2::Bar;
+    if let Foo2::Car = b {
+        println!("match Bar {:?}", b);
+    } else {
+        println!("not match {:?}", b);
+    }
+
+    // 试试结构体
+    #[derive(Debug)]
+    struct OtherStruct {
+        x: i32,
+        y: i32,
+    }
+    let s = OtherStruct { x: 3, y: 3 };
+
+    // a @ 是 一个 pattern ，这么用会报错
+    // 所以应该这么干
+    if let OtherStruct { x: 4, y } = s {
+        // 这里的x 是 无法使用的
+        // println!("0st {:?}.x:{}", s, x);
+        println!("0st {:?}", s);
+    } else if let OtherStruct { x: a @ 3, y } = s {
+        println!("1st {:?}.x :{}", s, a);
+        // 这个为啥能用
+    } else if let OtherStruct { y: 3, .. } = s {
+        println!("2st {:?}", s);
+    } else {
+        println!("not match");
+    }
+}
+
+```
+
+
+## while let
+
+```rust
+
+fn main() {
+    let mut optional = Some(1);
+
+    while let Some(i) = optional {
+        if i >= 9 {
+            println!(">9, break");
+            break;
+        } else {
+            optional = Some(i + 1);
+            println!("other")
+        }
+    }
+}
+
 
 ```
