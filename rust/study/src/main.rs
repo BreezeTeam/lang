@@ -1,40 +1,30 @@
-#[derive(Debug)]
-struct Point {
-    x: i32,
-    y: i32,
-}
+// 闭包：也叫做lambda 表达式。是一类可以捕获周围作用域中变量的函数
 
-// 方法是依附于对象的函数
-// 这些函数通过关键字self来访问对象中的数据
-// 方法在 impl代码块中定义
-impl Point {
-    // 这是一个静态方法，静态方法不需要被实例调用
-    // 直接 对象::静态方法即可，一般用于 constructor
-    fn constructor() -> Point {
-        Point { x: 0, y: 0 }
-    }
-
-    // 另外一个new 函数，不知道有没有 重载
-    fn new(x: i32, y: i32) -> Point {
-        Point { x: x, y: y }
-    }
-
-    fn destroy(self){
-        let Point { x, y } = self;
-        println!("x:{},y:{}",x,y);
-    }
-
-    fn print(&self){
-        let Point { x, y } = self;
-        println!("x:{},y:{}",x,y);
-    }
-}
+// |var|var+x ; 该闭包可以捕获x变量
 
 fn main() {
-    let point = Point::new(1, 1);
-    println!("{:?}", point);
-    point.print();
-    point.destroy();
-    // 后面所有的point 都无法使用，因为所有权被move了
-    // println!("{:?}", point);
+    // 一个典型的函数如下
+    fn function(i: i32) -> i32 {
+        1 + i
+    }
+
+    // 闭包：
+    // 由于闭包是匿名的，所以需要绑定到一个引用
+    // 完整的闭包包括 |入参:变量标注|->返回变量标注 {函数体}，
+    let closure_1 = |i: i32| -> i32 { i + 1 };
+    // 省略 类型标注
+    let closure_2 = |i| i + 1;
+    // 省略 函数体 的 作用域 {}
+    let closure_3 = |i| i + 1;
+
+    // 调用函数和闭包
+    let i = 1;
+    println!("function:{}", function(i));
+    println!("closure_1:{}", closure_1(i));
+    println!("closure_2:{}", closure_2(i));
+    println!("closure_3:{}", closure_3(i));
+
+    //无参闭包,返回一个 1
+    let one = || 1;
+    println!("one:{}", one());
 }
