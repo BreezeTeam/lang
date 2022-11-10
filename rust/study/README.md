@@ -1484,3 +1484,225 @@ fn main() {
 }
 
 ```
+
+## 闭包的捕获
+
+```rust
+
+use std::mem;
+
+fn main() {
+    // 闭包很灵活，可以自动适应用例
+    //既可以 move又可以borrow
+    // 闭包可以通过 {引用 &T}{可变引用 &mut T}{值 T}来捕获变量
+
+    // 闭包优先通过引用捕获
+    let color = String::from("red");
+    println!("{}", color);
+    // color = String::from("green");
+
+    // 捕获变量的引用
+    let print = || println!("{}", color);
+    // 使用借用进行调用
+    print();
+
+    // 被不可变引用
+    let reborrow = &color;
+    print();
+    println!("{}", reborrow);
+
+    // 这里修改了变量的绑定，但是不影响哦
+    let color = String::from("green");
+    print();
+    println!("{}", color);
+
+    // 使用可变借用的闭包
+    let mut count = 0;
+    // 这里可以修改
+    count = 50;
+    // 当 inc 变化时，意味着闭包的内部发生变化
+    let mut inc = || {
+        count += 1;
+        println!("{}", count);
+    };
+    inc();
+    // 下一句：不能去修改count了，因为这里是一个借用
+    // count = 100;
+    inc();
+    // 闭包中捕获了这个变量
+
+    // 这时可以重新修改这个数据，因为后面没有再使用闭包了
+    // 即闭包不再借用 &mut count 了
+    count = 100;
+    println!("{}", count);
+
+    // rust 中，默认所有的值都是栈分配
+    // 通过使用Box<T>,可以把这个值进行装箱，使其在堆上分配。类似于 cpp的
+    // 智能析构指针；
+    // 创建一个不可复制类型
+    let moveable = Box::new(0);
+
+    // 此时 这里面是指针
+    // 对象不用move
+    let consume = || {
+        println!("moveable:{}", *moveable);
+    };
+
+    // 可以多次调用，因为现在闭包没有要求move
+    consume();
+    consume();
+    // 此时 这里面是指针
+    // 对象不用move
+    let consume2 = || {
+        println!("moveable:{}", *moveable);
+        mem::drop(moveable);
+    };
+
+    // 可以多次调用，因为现在闭包没有要求move
+    consume2();
+    // 变量被move到闭包，并且被消耗了
+    // consume2();
+
+    // 对于之前的闭包，如果使用move ，可以强制闭包获取所有权
+
+    let color = String::from("red");
+    println!("{}", color);
+    // color = String::from("green");
+
+    // 捕获变量的引用
+    let print = move || println!("{}", color);
+    // 使用借用进行调用
+    print();
+    // 不再能使用 被move后的变量
+    // println!("{}", color);
+    print();
+}
+
+```
+
+
+## 闭包作为函数 入参
+
+```rust
+// 该函数将闭包作为参数，并且进行调用
+// 注意点：F必须是泛型。这是由闭包定义的实现方式决定过的
+// 当 闭包被定义时，编译器会隐式创建一个匿名类型的结构体
+// 该结构体用来存储闭包捕获的变量，同时为这个未知类型的结构体实现函数功能
+// 通过 Fn,FnMut,FnOnce 这三种trait中的一种
+// Fn、FnMut 和 FnOnce 这些 trait 明确了闭包如何从周围的作用域中捕获变量。
+fn apply<F>(mut f: F)
+// trait 约束
+where
+    // rust 中的闭包在函数中使用时，不允许模糊的写法
+    // 需要指定闭包的完整类型
+    // 其类型通过三种trait进行指定
+    // Fn 表示捕获方式为通过引用（&T）的闭包
+    // FnMut 表示捕获方式为通过引用（&mut T）的闭包
+    // FnOnce 表示捕获方式为通过引用（T）的闭包
+    // F: FnMut(),
+    F: FnOnce(), // 使用更高级的FnOnce 和 FnMut 都能接到这种类型
+{
+    f();
+}
+
+// 这是一个普通的函数，但是满足 trait Fn限定
+// 可以被 Fn,FnMut,FnOnce 这三种约束的函数作为参数调用
+fn function() {
+    println!("a funciton")
+}
+
+fn main() {
+    // 函数将闭包作为参数调用
+
+    let xx = "str";
+    let mut color = String::from("red");
+
+    let mut print = || {
+        // 捕获该变量，需要 Fn
+        println!("xx:{}", color);
+
+        // 改变了 color，需要 FnMut
+        color = String::from("green");
+    };
+    print();
+
+    // 这里就无法使用 Fn 了，因为 print 是一个FnMut闭包，Fn接不到这种类型的
+    apply(print);
+    apply(function);
+    // apply(print);
+
+    // ** 编译器： 在满足使用需求的前提下尽量以限制最多的方式捕获。
+    // 我可以指定需要once，但是这个函数可以接受限制更多的闭包，但是反之不行
+}
+
+```
+
+## 闭包作为返回参数
+```rust
+
+// 使用 闭包作为输出，但是因为现在Rust只支持 返回具体的类型
+// 所以 因为匿名闭包的类型是未知的，所以只有使用impl Trait 才能返回闭包
+// 并且还需要使用move 将闭包引用的捕获进行move，否则这些引用将会在函数退出时被销毁
+fn create_fn() -> impl Fn() {
+    let text = "Fn".to_owned();
+    move || println!("this a {}", text)
+}
+fn create_fnmut() -> impl FnMut() {
+    let text = "FnMut".to_owned();
+    move || println!("this a {}", text)
+}
+fn create_fnonce() -> impl FnOnce() {
+    let text = "FnOnce".to_owned();
+    move || println!("this a {}", text)
+}
+
+fn main() {
+    create_fn()();
+    create_fnmut()();
+    create_fnonce()();
+}
+
+
+```
+
+
+## 闭包的例子
+
+```rust
+
+fn main() {
+    let vec1 = vec![1, 2, 3];
+    let vec2 = vec![1, 2, 3];
+    // any 要求一个闭包，接受值，并且内部只能借用
+
+    println!("2 in this ? {}", vec1.into_iter().any(|x| x == 2));
+    // 要求值类型
+    // println!("2 in this ? {}", vec1.into_iter().any(|&x| x == 2));
+
+    // iter 中返回的时 [&i32] ,需要解构
+    println!("2 in this ? {}", vec2.iter().any(|&x| x == 2));
+
+    let vec1 = vec![1, 2, 3];
+    let vec2 = vec![1, 2, 3];
+    let mut iter1 = vec1.iter();
+    let mut iter2 = vec2.into_iter();
+
+    let x = vec1.iter().find(|&&x| 2 == x);
+
+    // find 的 self 是 &mut 的
+    println!("2 in this ? {:?}", iter1.find(|&&i| i == 2));
+    println!("2 in this ? {:?}", iter2.find(|&i| i == 2));
+
+    let array1 = [1, 2, 3];
+    let array2 = [4, 5, 6];
+
+    // 对数组的 `iter()` 举出 `&i32`。
+    println!("Find 2 in array1: {:?}", array1.iter().find(|&&x| x == 2));
+    // 对数组的 `into_iter()` 通常举出 `&i32``。
+    println!(
+        "Find 2 in array2: {:?}",
+        array2.into_iter().find(|&x| x == 2)
+    );
+}
+
+```
