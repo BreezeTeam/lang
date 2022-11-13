@@ -572,7 +572,8 @@ fn inspect(event: WebEvent) {
 const：常量，没有固定的内存地址，将会在编译时被内联
 即不管在哪里使用，在使用时都是直接拷贝这段数据到相关上下文中使用
 
-```rustuse std::collections::HashMap;
+```rust
+use std::collections::HashMap;
 
 
 // 不可改变的值
@@ -1706,3 +1707,98 @@ fn main() {
 }
 
 ```
+
+
+## 高阶函数
+输入一个或者多个函数，生成一个函数的函数
+惰性求值和高阶函数支持函数式风格编程
+
+
+```rust
+fn main() {
+    // 寻找所有数字的平方是奇数就累加
+    let upper = 1000;
+    // 循环 0到无穷大
+    let mut acc = 0;
+    for n in 0.. {
+        let n_squared = n * n;
+        if n_squared >= upper {
+            break;
+        } else if if_odd(n_squared) {
+            acc += 1;
+        }
+    }
+    println!("find acc:{}", acc);
+
+    // 函数式编程
+    let find = (0..)
+        .map(|n| n * n) // map成n*n
+        .take_while(|&n| n <= upper) //取小于上限的
+        .map(|n| if if_odd(n) { 1 } else { 0 }) // 筛选是 odd的
+        // .map(|_| 1)
+        .sum::<i32>();
+
+    println!("find1:{}", find);
+
+    let find = (0..)
+        .map(|n| n * n) // map成n*n
+        .take_while(|&n| n <= upper) //取小于上限的
+        .filter(|&n| if_odd(n)) // 筛选是 odd的
+        .map(|_| 1)
+        .sum::<i32>();
+
+    println!("find2:{}", find);
+
+    let find = (0..)
+        .map(|n| n * n) // map成n*n
+        .take_while(|&n| n <= upper) //取小于上限的
+        .filter(|&n| if_odd(n)) // 筛选是 odd的
+        .collect::<Vec<i32>>()
+        .len();
+
+    println!("find3:{}", find);
+
+    let find = (0..)
+        .map(|n| n * n) // map成n*n
+        .take_while(|&n| n <= upper) //取小于上限的
+        .filter(|&n| if_odd(n)) // 筛选是 odd的
+        .fold(0, |sum, i| sum + 1);
+
+    println!("find3:{}", find);
+}
+
+// 判断是否为奇数
+fn if_odd(n: i32) -> bool {
+    n % 2 == 1
+}
+
+```
+
+
+## 发散函数
+永远不会返回的函数，标记为!
+
+```rust
+
+fn main() {
+    fn sum_odd_function(upper: i32) -> i32 {
+        let mut sum = 0;
+        for i in 0..upper {
+            let x = match i % 2 == 1 {
+                true => i,
+                false => continue,
+            };
+
+            sum += x;
+        }
+        sum
+    }
+    println!("sum :{}", sum_odd_function(100));
+}
+
+```
+
+## 模块系统
+将代码按层次分成逻辑单元，管理这些模块之间的 可见性
+模块是 item的集合
+item: 函数，结构体，trait，impl ，其他模块
