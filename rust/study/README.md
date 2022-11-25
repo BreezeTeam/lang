@@ -2033,3 +2033,103 @@ fn main() {
 }
 
 ```
+
+## 泛型
+
+### 实现泛型函数
+```rust
+#[derive(Debug)]
+struct Val {
+    val: f64,
+}
+#[derive(Debug)]
+struct GenVal<T> {
+    val: T,
+}
+
+// 为泛型实现 函数
+impl Val {
+    fn value(&self) -> &f64 {
+        &self.val
+    }
+}
+
+impl<T> GenVal<T> {
+    fn value(&self) -> &T {
+        &self.val
+    }
+}
+
+fn main() {
+    let x = Val { val: 3.0 };
+    println!("{:?}", x);
+    println!("{:?}", x.value());
+
+    let y = GenVal { val: "sasa" };
+    println!("{:?}", y);
+    println!("{:?}", y.value());
+}
+
+```
+
+
+### traict 实现泛型
+
+```rust
+
+// 泛型 trait
+trait XX<T> {
+    // 这个trait 可以作为一个泛型方法，把 所有权drop 掉
+    fn sasa(self, _: T);
+}
+
+// 对 任何的泛型调用者U 和任何泛型类型T，实现 这个 trait
+impl<T, U> XX<T> for U {
+    fn sasa(self, _: T) {}
+}
+
+// 两个不可复制的类型
+struct Empty;
+struct NULL;
+fn main() {
+    let empty = Empty;
+    let null = NULL;
+    empty.sasa(null);
+    // empty;
+    // null;
+    // 以下两个结构体的 所有权被 trait 消耗了
+}
+
+```
+
+
+### 泛型trait约束
+
+```rust
+
+use std::fmt::Debug;
+// 泛型约束
+
+// 打印泛型对象，该对象必须实现 Debug Trait
+fn print_debug_data<T: Debug>(t: &T) {
+    println!("{:?}", t);
+}
+#[derive(Debug)]
+struct xx {
+    a: i64,
+    b: i64,
+}
+struct yy {
+    a: f64,
+    b: f64,
+}
+
+fn main() {
+    let x = xx { a: 1, b: 2 };
+    print_debug_data(&x);
+    let y = yy { a: 1.0, b: 2.1 };
+    // print_debug_data(&y);
+    // y 没有 实现 Debug trait，会报错
+}
+
+```

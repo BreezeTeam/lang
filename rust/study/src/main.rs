@@ -1,22 +1,24 @@
-// 这个函数仅当目标系统是 Linux 的时候才会编译
-#[cfg(target_os = "linux")]
-fn are_you_on_linux() {
-    println!("You are running linux!")
-}
+use std::fmt::Debug;
+// 泛型约束
 
-// 而这个函数仅当目标系统 **不是** Linux 时才会编译
-#[cfg(not(target_os = "linux"))]
-fn are_you_on_linux() {
-    println!("You are *not* running linux!")
+// 打印泛型对象，该对象必须实现 Debug Trait
+fn print_debug_data<T: Debug>(t: &T) {
+    println!("{:?}", t);
+}
+#[derive(Debug)]
+struct xx {
+    a: i64,
+    b: i64,
+}
+struct yy {
+    a: f64,
+    b: f64,
 }
 
 fn main() {
-    are_you_on_linux();
-    
-    println!("Are you sure?");
-    if cfg!(target_os = "linux") {
-        println!("Yes. It's definitely linux!");
-    } else {
-        println!("Yes. It's definitely *not* linux!");
-    }
+    let x = xx { a: 1, b: 2 };
+    print_debug_data(&x);
+    let y = yy { a: 1.0, b: 2.1 };
+    // print_debug_data(&y);
+    // y 没有 实现 Debug trait，会报错
 }
