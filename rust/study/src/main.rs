@@ -1,24 +1,21 @@
 use std::fmt::Debug;
-// 泛型约束
+// where 约束
+trait PrintWhereDebug {
+    fn print_where_debug(self);
+}
 
-// 打印泛型对象，该对象必须实现 Debug Trait
-fn print_debug_data<T: Debug>(t: &T) {
-    println!("{:?}", t);
-}
-#[derive(Debug)]
-struct xx {
-    a: i64,
-    b: i64,
-}
-struct yy {
-    a: f64,
-    b: f64,
+// 我们这里需要一个 where 从句，否则就要表达成 T:Debug
+// 这样意思就不对
+impl<T> PrintWhereDebug for T
+where
+    Option<T>: Debug,
+{
+    fn print_where_debug(self) {
+        println!("{:?}", Some(self));
+    }
 }
 
 fn main() {
-    let x = xx { a: 1, b: 2 };
-    print_debug_data(&x);
-    let y = yy { a: 1.0, b: 2.1 };
-    // print_debug_data(&y);
-    // y 没有 实现 Debug trait，会报错
+    let vec = vec![1, 2, 3, 4, 5];
+    vec.print_where_debug();
 }

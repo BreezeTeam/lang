@@ -2107,13 +2107,24 @@ fn main() {
 
 ```rust
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 // 泛型约束
 
 // 打印泛型对象，该对象必须实现 Debug Trait
 fn print_debug_data<T: Debug>(t: &T) {
     println!("{:?}", t);
 }
+
+fn print_debug_display_data<T: Debug + Display>(t: &T) {
+    println!("{:?}", t);
+    println!("{}", t);
+}
+
+fn print_debug_and_display_data<T: Debug, U: Display>(t: &T, u: &U) {
+    println!("{:?}", t);
+    println!("{}", u);
+}
+
 #[derive(Debug)]
 struct xx {
     a: i64,
@@ -2123,13 +2134,57 @@ struct yy {
     a: f64,
     b: f64,
 }
+#[derive(Debug)]
+struct zz {
+    a: f64,
+    b: f64,
+}
 
+impl Display for zz {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.a, self.b)
+    }
+}
 fn main() {
     let x = xx { a: 1, b: 2 };
     print_debug_data(&x);
     let y = yy { a: 1.0, b: 2.1 };
     // print_debug_data(&y);
     // y 没有 实现 Debug trait，会报错
+
+    // 多重约束
+    let z = zz { a: 1.0, b: 2.1 };
+    print_debug_display_data(&z);
+    print_debug_and_display_data(&z, &z);
 }
+
+```
+
+
+### where 约束
+
+```rust
+use std::fmt::Debug;
+// where 约束
+trait PrintWhereDebug {
+    fn print_where_debug(self);
+}
+
+// 我们这里需要一个 where 从句，否则就要表达成 T:Debug
+// 这样意思就不对
+impl<T> PrintWhereDebug for T
+where
+    Option<T>: Debug,
+{
+    fn print_where_debug(self) {
+        println!("{:?}", Some(self));
+    }
+}
+
+fn main() {
+    let vec = vec![1, 2, 3, 4, 5];
+    vec.print_where_debug();
+}
+
 
 ```
