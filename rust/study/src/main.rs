@@ -1,21 +1,25 @@
-use std::fmt::Debug;
-// where 约束
-trait PrintWhereDebug {
-    fn print_where_debug(self);
+fn isAdult(age: &Years) -> bool {
+    age.0 >= 18i64
 }
-
-// 我们这里需要一个 where 从句，否则就要表达成 T:Debug
-// 这样意思就不对
-impl<T> PrintWhereDebug for T
-where
-    Option<T>: Debug,
-{
-    fn print_where_debug(self) {
-        println!("{:?}", Some(self));
+struct Years(i64);
+impl Years {
+    pub fn to_days(&self) -> Days {
+        Days(self.0 * 356)
+    }
+}
+struct Days(i64);
+impl Days {
+    pub fn to_years(&self) -> Years {
+        Years(self.0 / 356)
     }
 }
 
 fn main() {
-    let vec = vec![1, 2, 3, 4, 5];
-    vec.print_where_debug();
+    // new type
+
+    let age = Years(18);
+    let age_days = age.to_days();
+    println!("is adult:{:?}", isAdult(&age));
+    println!("is adult:{:?}", isAdult(&age));
+    println!("is adult:{:?}", isAdult(&age_days.to_years()));
 }
