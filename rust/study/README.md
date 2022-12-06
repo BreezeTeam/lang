@@ -2312,3 +2312,116 @@ fn main() {
 }
 
 ```
+
+
+## RAII
+
+### 所有权和move
+
+```rust
+// raii
+
+//该函数用于在堆上分配
+fn create_in_box() {
+    let box1 = Box::new(2321i32);
+    // box1 会在该作用域退出时，自动进行回收 （调用析构函数）
+    // 类似于 智能指针
+}
+
+// 析构函数是通过 Drop trait 提供的
+struct DropTest;
+impl Drop for DropTest {
+    // drop 时，会强制move 所有权
+    fn drop(&mut self) {
+        println!("DROP!!!!");
+    }
+}
+
+// 所有权
+// 因为每个变量都需要释放自己的资源
+// 所以资源只能拥有一个所有者
+// 这个能防止资源的重复释放
+
+// 在进行 赋值或者通过值来进行函数参数传递(值传递)时，资源的所有权就会发生转移
+fn destroy_box(c: Box<i32>) {
+    println!("Destroying a box")
+}
+fn main() {
+    {
+        let box2 = Box::new(32i32);
+        // box2 会在该嵌套作用域退出时，自动回收
+        let x = DropTest;
+
+        destroy_box(box2); //这里将会move所有权到里面，并且在函数作用域结束时回收
+    }
+    // 创建一大堆放在堆上的 box
+    for _ in 0..1000 {
+        create_in_box();
+    }
+}
+
+// 我们可以 使用 valgrind 对内存进行检查
+
+```
+
+### 部分移动
+```rust
+fn main(){
+    // 一个 部分移动的例子(partial move)
+    #[derive(Debug)]
+    struct Person{
+        name: String,
+        age: i32
+    }
+
+    let person = Person{
+        name: "John".to_string(),
+        age:1,
+    };
+
+    // 解构
+    // 如果 这里不使用 ref，那么name 将会被从person中移走
+    // 会导致后面无法使用 person.name。这就是部分移动
+    let Person{ref name,age} = person;
+    println!("{:?}",name);
+    println!("{:?}",age);
+    println!("{:?}",person.name);
+    println!("{:?}",person.age);
+}
+```
+
+
+### 借用
+
+```rust
+fn borrow(b: &i32) {
+    println!("borrow:{}", b);
+}
+fn moveinto(b: Box<i32>) {
+    println!("destroying {}", b);
+}
+
+fn main() {
+    let boxed = Box::new(5i32);
+    let stack = 6i32;
+
+    // 借用了内容，没有取得所有权
+    borrow(&boxed);
+    borrow(&stack);
+
+    {
+        // 取得一个引用
+        let ref_to: &i32 = &boxed;
+
+        // 当 引用被使用时，无法被销毁
+        // moveinto(boxed);
+
+        // 在 moveinto 后面使用了 其借用，那么所有权无法在moveinto中转移
+        // 会报错
+        borrow(ref_to);
+        // ref_to 离开所用域后，该借用不存在，即box不再被借用
+    }
+    moveinto(boxed);
+}
+
+```
