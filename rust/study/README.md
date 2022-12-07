@@ -93,7 +93,8 @@ fn main() {
 
 ## fmt Debug
 
-所有的类型，若想用 std::fmt 的格式化打印，都要求实现至少一个可打印的 traits。 自动的实现只为一些类型提供，比如 std 库中的类型。所有其他类型都必须手动实现。 使用`#[derive(Debug)]`
+所有的类型，若想用 std::fmt 的格式化打印，都要求实现至少一个可打印的 traits。 自动的实现只为一些类型提供，比如 std
+库中的类型。所有其他类型都必须手动实现。 使用`#[derive(Debug)]`
 自动实现非std对象的trait 实现
 
 使用`{:?}` 进行打印 使用`{:#?}` 进行美化打印:
@@ -207,8 +208,10 @@ fn main() {
 
 ## 创建宏
 
-Rust 提供了一个强大的宏系统，可进行元编程（metaprogramming）。 宏看起来和函数很像，只不过名称末尾有一个感叹号 ! 。 宏并不产 生函数调用，而是展开成源码，并和程序的其余部分一起被编译。 Rust 又有一点和 C
-以及其他语言都不同，那就是 Rust 的宏会展开为抽象语法树（AST，abstract syntax tree）， 而不是像字符串预处理那样直接替换成代码，这样就不会产生无法预料的优先权 错误。
+Rust 提供了一个强大的宏系统，可进行元编程（metaprogramming）。 宏看起来和函数很像，只不过名称末尾有一个感叹号 ! 。 宏并不产
+生函数调用，而是展开成源码，并和程序的其余部分一起被编译。 Rust 又有一点和 C
+以及其他语言都不同，那就是 Rust 的宏会展开为抽象语法树（AST，abstract syntax tree）， 而不是像字符串预处理那样直接替换成代码，这样就不会产生无法预料的优先权
+错误。
 
 ```rust
 macro_rules! macro_test {
@@ -569,6 +572,7 @@ fn inspect(event: WebEvent) {
 ```
 
 ## 常量
+
 const：常量，没有固定的内存地址，将会在编译时被内联
 即不管在哪里使用，在使用时都是直接拷贝这段数据到相关上下文中使用
 
@@ -582,7 +586,7 @@ const LANGUAGE: i32 = 1;
 const LANGUAGE_2: &str = "this is a string";
 const LANGUAGE_3: &'static str = "this is a other string";
 // 以上两种写法是一样的
-const CONST4:i32 =1 + LANGUAGE;
+const CONST4: i32 = 1 + LANGUAGE;
 
 // const array
 const LEFT: [&'static str; 3] = ["Hello", "World", "!"];
@@ -592,32 +596,31 @@ const LEFT2: &'static [&'static str] = &["Hello", "World", "!"];
 
 // static 类似于 const ，但是它在程序中标识一个精确的内存位置
 // 静态中的调用仅限于常量函数、元组结构和元组变体
-lazy_static::lazy_static!{
+lazy_static::lazy_static! {
 
     // 使用 ref 关键字的原因 是 ref的语义符合 lazy_static 的实际情况
     static ref STRING_CONST: String = String::from("STRING_CONST");
     static ref STRING_CONST2: String = String::from("STRING_CONST2");
     static ref MAP: HashMap<u32, u32> = HashMap::new();
 }
-static  STRING_CONST3: &str = "STRING_CONST";
-static  STRING_CONST4: &'static str = "STRING_CONST2";
+static STRING_CONST3: &str = "STRING_CONST";
+static STRING_CONST4: &'static str = "STRING_CONST2";
 // 尝试使用 String ，但是不可行，因为String 在堆上
 // static STRING_CONST3: &String = STRING_CONST.add_assign(STRING_CONST);
 
 // 测试一下vec
-static VEC:Vec<u8> = Vec::new();
+static VEC: Vec<u8> = Vec::new();
 
 // 不能使用
 // static MAP: HashMap<u32, u32> = HashMap::new();
-
 
 
 // 具有static生命周期的，可以是可变的变量（但是需要使用 static mut）
 static ARRAY: [i32; 2] = [0; 2];
 
 /// #### 离开一下
-/// 
-/// 
+///
+///
 fn main() {
     println!("LANGUAGE：{}", LANGUAGE);
     println!("LANGUAGE_2:{}", LANGUAGE_2);
@@ -964,13 +967,16 @@ fn main() -> Result<()> {
 ```
 
 ### lazy_static
+
 使用这个宏可以创建在运行时初始化的静态
 
 可以使用外部crate 声明
+
 ```rust
 #[macro_use]
 extern crate lazy_static;
 ```
+
 这样会将外部的标识符绑定到当前extern 所在的作用域，
 如果放在根mod中，会自动出现在所有作用域
 其中`#[macro_use]`是复用宏
@@ -999,7 +1005,6 @@ fn main() {
     println!("A expensive calculation on a static results in: {}.", *NUMBER);
 }
 ```
-
 
 ## iter and for in
 
@@ -1069,7 +1074,6 @@ fn main() {
     for v in names.into_iter() {
         // 这里 用不用 & 都会被move
         match &v {
-
             &"Ferris" => println!("There is a rustacean among us!"),
             _ => println!("Hello :{}", v),
         }
@@ -1132,13 +1136,15 @@ fn main() {
         Color::RGB(r, g, b) => println!("r:{},g:{},b:{}", r, g, b),
         Color::HSV(h, s, v) => println!("h:{},s:{},v:{}", h, s, v),
     }
-
 }
 
 ```
-## match ,ref mut & 
+
+## match ,ref mut &
+
 ```rust
 struct Refer<T1>(T1);
+
 fn main() {
     println!("dereference &val");
     // match 解引用
@@ -1204,7 +1210,6 @@ fn main() {
 
 ```
 
-
 ## 卫语句
 
 ```rust
@@ -1219,7 +1224,6 @@ fn main() {
 }
 
 ```
-
 
 ## match 时进行绑定
 
@@ -1307,15 +1311,14 @@ fn main() {
         Color::Name => println!("name"),
         // 这里使用match 要求 r 需要是 11
         Color::RGB(r @ 11, g, b) => println!("@ r:{},g:{},b:{}", r, g, b),
-        Color::RGB(r , g, b) => println!("r:{},g:{},b:{}", r, g, b),
+        Color::RGB(r, g, b) => println!("r:{},g:{},b:{}", r, g, b),
         Color::HSV(h, s, v) => println!("h:{},s:{},v:{}", h, s, v),
     }
 }
 
 ```
 
-
-## if let 
+## if let
 
 ```rust
 fn main() {
@@ -1381,7 +1384,6 @@ fn main() {
 
 ```
 
-
 ## while let
 
 ```rust
@@ -1404,6 +1406,7 @@ fn main() {
 ```
 
 ## 方法
+
 ```rust
 #[derive(Debug)]
 struct Point {
@@ -1426,14 +1429,14 @@ impl Point {
         Point { x: x, y: y }
     }
 
-    fn destroy(self){
+    fn destroy(self) {
         let Point { x, y } = self;
-        println!("x:{},y:{}",x,y);
+        println!("x:{},y:{}", x, y);
     }
 
-    fn print(&self){
+    fn print(&self) {
         let Point { x, y } = self;
-        println!("x:{},y:{}",x,y);
+        println!("x:{},y:{}", x, y);
     }
 }
 
@@ -1447,7 +1450,6 @@ fn main() {
 }
 
 ```
-
 
 ## 闭包
 
@@ -1581,7 +1583,6 @@ fn main() {
 
 ```
 
-
 ## 闭包作为函数 入参
 
 ```rust
@@ -1593,7 +1594,7 @@ fn main() {
 // Fn、FnMut 和 FnOnce 这些 trait 明确了闭包如何从周围的作用域中捕获变量。
 fn apply<F>(mut f: F)
 // trait 约束
-where
+    where
     // rust 中的闭包在函数中使用时，不允许模糊的写法
     // 需要指定闭包的完整类型
     // 其类型通过三种trait进行指定
@@ -1601,7 +1602,7 @@ where
     // FnMut 表示捕获方式为通过引用（&mut T）的闭包
     // FnOnce 表示捕获方式为通过引用（T）的闭包
     // F: FnMut(),
-    F: FnOnce(), // 使用更高级的FnOnce 和 FnMut 都能接到这种类型
+        F: FnOnce(), // 使用更高级的FnOnce 和 FnMut 都能接到这种类型
 {
     f();
 }
@@ -1639,6 +1640,7 @@ fn main() {
 ```
 
 ## 闭包作为返回参数
+
 ```rust
 
 // 使用 闭包作为输出，但是因为现在Rust只支持 返回具体的类型
@@ -1648,10 +1650,12 @@ fn create_fn() -> impl Fn() {
     let text = "Fn".to_owned();
     move || println!("this a {}", text)
 }
+
 fn create_fnmut() -> impl FnMut() {
     let text = "FnMut".to_owned();
     move || println!("this a {}", text)
 }
+
 fn create_fnonce() -> impl FnOnce() {
     let text = "FnOnce".to_owned();
     move || println!("this a {}", text)
@@ -1665,7 +1669,6 @@ fn main() {
 
 
 ```
-
 
 ## 闭包的例子
 
@@ -1708,11 +1711,10 @@ fn main() {
 
 ```
 
-
 ## 高阶函数
+
 输入一个或者多个函数，生成一个函数的函数
 惰性求值和高阶函数支持函数式风格编程
-
 
 ```rust
 fn main() {
@@ -1774,8 +1776,8 @@ fn if_odd(n: i32) -> bool {
 
 ```
 
-
 ## 发散函数
+
 永远不会返回的函数，标记为!
 
 ```rust
@@ -1799,11 +1801,13 @@ fn main() {
 ```
 
 ## 模块系统
+
 将代码按层次分成逻辑单元，管理这些模块之间的 可见性
 模块是 item的集合
 item: 函数，结构体，trait，impl ，其他模块
 
 ### 模块的可见性
+
 ```rust
 mod mode1 {
     pub fn funciton() {
@@ -1925,6 +1929,7 @@ mod test {
     pub struct Struct2 {
         var1: String,
     }
+
     impl Struct2 {
         pub fn new(var1: String) -> Struct2 {
             Struct2 { var1: var1 }
@@ -1949,14 +1954,13 @@ fn main() {
 
 ```
 
-
 ## 测试
+
 ```rust
 
 // 使用该标注 表示这个集成测试
 #[cfg(test)]
 mod test {
-
     // 该属性说明它是一个测试函数
     #[test]
     //
@@ -1966,20 +1970,24 @@ mod test {
         // 使用 assert 宏 进行 判断
         assert_eq!(2 + 2, 4)
     }
+
     #[test]
     #[ignore] // 通过这个属性可以忽略一个测试
-              // 但是可以 通过 cargo test -- --ignored ，只运行被忽略的测试
+    // 但是可以 通过 cargo test -- --ignored ，只运行被忽略的测试
     fn function1() {
         // 当发生panic 时，测试就会失败
         panic!("error")
     }
+
     #[test]
     fn function2() {
         let result = false;
         // 使用assert 提供更多的信息
         assert!(result, "Failed value was `{}`", result);
     }
+
     use super::other_need_panic;
+
     #[test]
     // 使用该属性，当测试函数抛出panic时测试成功
     #[should_panic]
@@ -2005,7 +2013,6 @@ fn main() {}
 
 ```
 
-
 ## cfg
 
 ```rust
@@ -2023,7 +2030,7 @@ fn are_you_on_linux() {
 
 fn main() {
     are_you_on_linux();
-    
+
     println!("Are you sure?");
     if cfg!(target_os = "linux") {
         println!("Yes. It's definitely linux!");
@@ -2037,11 +2044,13 @@ fn main() {
 ## 泛型
 
 ### 实现泛型函数
+
 ```rust
 #[derive(Debug)]
 struct Val {
     val: f64,
 }
+
 #[derive(Debug)]
 struct GenVal<T> {
     val: T,
@@ -2072,7 +2081,6 @@ fn main() {
 
 ```
 
-
 ### traict 实现泛型
 
 ```rust
@@ -2090,7 +2098,9 @@ impl<T, U> XX<T> for U {
 
 // 两个不可复制的类型
 struct Empty;
+
 struct NULL;
+
 fn main() {
     let empty = Empty;
     let null = NULL;
@@ -2101,7 +2111,6 @@ fn main() {
 }
 
 ```
-
 
 ### 泛型trait约束
 
@@ -2130,10 +2139,12 @@ struct xx {
     a: i64,
     b: i64,
 }
+
 struct yy {
     a: f64,
     b: f64,
 }
+
 #[derive(Debug)]
 struct zz {
     a: f64,
@@ -2145,6 +2156,7 @@ impl Display for zz {
         write!(f, "({},{})", self.a, self.b)
     }
 }
+
 fn main() {
     let x = xx { a: 1, b: 2 };
     print_debug_data(&x);
@@ -2160,11 +2172,11 @@ fn main() {
 
 ```
 
-
 ### where 约束
 
 ```rust
 use std::fmt::Debug;
+
 // where 约束
 trait PrintWhereDebug {
     fn print_where_debug(self);
@@ -2173,8 +2185,8 @@ trait PrintWhereDebug {
 // 我们这里需要一个 where 从句，否则就要表达成 T:Debug
 // 这样意思就不对
 impl<T> PrintWhereDebug for T
-where
-    Option<T>: Debug,
+    where
+        Option<T>: Debug,
 {
     fn print_where_debug(self) {
         println!("{:?}", Some(self));
@@ -2190,18 +2202,23 @@ fn main() {
 ```
 
 ### newtype
+
 ```rust
 
 fn isAdult(age: &Years) -> bool {
     age.0 >= 18i64
 }
+
 struct Years(i64);
+
 impl Years {
     pub fn to_days(&self) -> Days {
         Days(self.0 * 356)
     }
 }
+
 struct Days(i64);
+
 impl Days {
     pub fn to_years(&self) -> Years {
         Years(self.0 / 356)
@@ -2221,6 +2238,7 @@ fn main() {
 ```
 
 ### trait中的关联类型
+
 ```rust
 // 将会为这个这个结构体，实现一个特别的trait
 #[derive(Debug)]
@@ -2250,8 +2268,8 @@ impl YY1<i32, i32> for XX {
 
 // 不使用关联类型实现一个泛型函数，会很麻烦
 fn difference1<A, B, C>(yy: &C) -> i32
-where
-    C: YY1<A, B>,
+    where
+        C: YY1<A, B>,
 {
     yy.last() - yy.first()
 }
@@ -2267,6 +2285,7 @@ trait YY2 {
     fn first2(&self) -> i32;
     fn last2(&self) -> i32;
 }
+
 /// 利用关联类型为 XX实现trait
 impl YY2 for XX {
     type A = i32;
@@ -2283,6 +2302,7 @@ impl YY2 for XX {
         (&self.0 == number1 && &self.1 == number2)
     }
 }
+
 // 使用关联类型实现一个泛型函数，很方便
 fn difference2<C: YY2>(yy: &C) -> i32 {
     yy.last2() - yy.first2()
@@ -2313,7 +2333,6 @@ fn main() {
 
 ```
 
-
 ## RAII
 
 ### 所有权和move
@@ -2330,6 +2349,7 @@ fn create_in_box() {
 
 // 析构函数是通过 Drop trait 提供的
 struct DropTest;
+
 impl Drop for DropTest {
     // drop 时，会强制move 所有权
     fn drop(&mut self) {
@@ -2346,6 +2366,7 @@ impl Drop for DropTest {
 fn destroy_box(c: Box<i32>) {
     println!("Destroying a box")
 }
+
 fn main() {
     {
         let box2 = Box::new(32i32);
@@ -2365,31 +2386,31 @@ fn main() {
 ```
 
 ### 部分移动
+
 ```rust
-fn main(){
+fn main() {
     // 一个 部分移动的例子(partial move)
     #[derive(Debug)]
-    struct Person{
+    struct Person {
         name: String,
         age: i32
     }
 
-    let person = Person{
+    let person = Person {
         name: "John".to_string(),
-        age:1,
+        age: 1,
     };
 
     // 解构
     // 如果 这里不使用 ref，那么name 将会被从person中移走
     // 会导致后面无法使用 person.name。这就是部分移动
-    let Person{ref name,age} = person;
-    println!("{:?}",name);
-    println!("{:?}",age);
-    println!("{:?}",person.name);
-    println!("{:?}",person.age);
+    let Person { ref name, age } = person;
+    println!("{:?}", name);
+    println!("{:?}", age);
+    println!("{:?}", person.name);
+    println!("{:?}", person.age);
 }
 ```
-
 
 ### 借用
 
@@ -2397,6 +2418,7 @@ fn main(){
 fn borrow(b: &i32) {
     println!("borrow:{}", b);
 }
+
 fn moveinto(b: Box<i32>) {
     println!("destroying {}", b);
 }
@@ -2424,4 +2446,243 @@ fn main() {
     moveinto(boxed);
 }
 
+```
+
+## 使用线程模块 实现go! 宏
+
+```rust
+
+use std::thread;
+
+macro_rules! go {
+    ($($body:tt)*) => {{
+        thread::spawn(move || {
+            $($body)*
+        });
+    }}
+}
+
+fn main() {
+    go! {
+        println!("Hello, world!");
+    }
+    loop {}
+}
+
+```
+
+## 使用rust 实现 时间轮
+
+```rust
+use std::borrow::Borrow;
+use std::cell::{Ref, RefCell};
+use std::cmp::Ord;
+use std::collections::BinaryHeap;
+use std::rc::Rc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::thread;
+use std::time::{Duration, SystemTime};
+
+/// 一共有两种类型的事件类型
+/// Timer 是一种循环执行的事件
+/// DateTime 是一种只执行一次的事件
+#[derive(Eq, PartialEq)]
+#[derive(Clone)]
+#[derive(Copy)]
+enum EventType {
+    Timer,
+    DateTime,
+}
+
+/// 事件结构体
+/// event_type 事件类型
+/// callback 执行函数
+///
+#[derive(Clone)]
+struct Event {
+    event_type: EventType,
+    callback: Rc<dyn Fn()>,
+    timeout: u128,
+    datetime: u128,
+    delay: u128,
+    id: u64,
+}
+
+
+impl Event {
+    /// eventType: 事件类型
+    /// callback: 回调函数
+    /// cron: 排程
+    fn new(event_type: EventType, callback: Rc<dyn Fn()>, cron: u128) -> Self {
+        let id = Self::generate_id();
+        match event_type {
+            EventType::Timer => Event {
+                event_type,
+                callback,
+                timeout: cron,
+                datetime: 0,
+                delay: cron,
+                id,
+            },
+            EventType::DateTime => Event {
+                event_type,
+                callback,
+                timeout: 0,
+                datetime: cron,
+                delay: 0,
+                id,
+            }
+        }
+    }
+    /// 基于计数的方式实现id生成
+    fn generate_id() -> u64 {
+        // 使用一个原子计数器来生成 ID
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let id = COUNTER.fetch_add(1, Ordering::Relaxed);
+        id
+    }
+}
+
+/// 为Event 实现 PartialEq trait
+impl PartialEq for Event {
+    fn eq(&self, other: &Self) -> bool {
+        self.event_type == other.event_type
+            && self.id == other.id
+            && self.timeout == other.timeout
+    }
+}
+
+/// 为Event 实现 PartialOrd trait
+impl PartialOrd for Event {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.delay.cmp(&other.delay))
+    }
+}
+
+
+/// 时间轮
+/// events: 所有添加的事件列表
+/// interval: 一轮的时间跨度
+/// tickMs: 时间轮间隔
+/// slots:时间槽
+struct TimerWheel {
+    events: Vec<Event>,
+    interval: u128,
+    ticks: u64,
+    slots: Vec<Vec<Event>>,
+}
+
+impl TimerWheel {
+    fn new(interval: u128, ticks: u64, slot_count: u32) -> Self {
+        let mut wheel = TimerWheel {
+            events: Vec::new(),
+            interval,
+            ticks,
+            slots: Vec::new(),
+        };
+
+        // 初始化一定数量的时间槽
+        for _ in 0..slot_count {
+            wheel.slots.push(Vec::new());
+        }
+
+        wheel
+    }
+
+    /// 向时间轮中添加event
+    /// event 需求一个引用
+    /// 如果该event 是一个  EventType::DateTime 类型，那么会计算其 delay 值
+    fn add_event(&mut self, event: Event) {
+        let ms = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis();
+        let mut add_event = event.clone();
+        if event.event_type == EventType::DateTime && event.datetime >= ms {
+            add_event.delay = add_event.datetime - ms;
+        }
+        // 其实只需要调整第一个slot,所以只需要判断event的delay是否在最近的slot中
+        if add_event.delay < self.interval {
+            // slot中存储的clone
+            self.slots[0].push(add_event.clone());
+        }
+        // 在push时，同时进行插入排序，调整slots中的顺序
+        self.events.push(add_event);
+    }
+
+    /// 移除时间
+    fn remove_event(&mut self, event: &Event) -> bool {
+        let index = self
+            .events
+            .iter()
+            .position(|e| e == event)
+            .expect("event not found");
+        self.events.remove(index);
+        true
+    }
+
+    fn tick(&mut self) {
+        // 移动时间槽,获取当前需要处理的事件列表
+        let mut expired_events = self.slots.remove(0);
+        self.slots.push(Vec::new());
+        // 处理当前待处理事件
+        for event in expired_events {
+            // 执行回调函数
+            (&event.callback)();
+            // 移除过期的
+            if event.event_type == EventType::DateTime {
+                self.remove_event(&event);
+            }
+        }
+
+        // 更新事件超时时间
+        // 这里是 存储的过期时间，实际上可以使用 时间戳，这样就不用全部遍历
+        // 并且 此处也可以使用有序列表
+        for event in self.events.iter_mut() {
+            // 对于所有的event，减去ticks时间
+            if event.delay >= 0 {
+                // 减去tricks的间隔时间
+                let sub = event.delay.checked_sub(self.ticks as u128);
+                match sub {
+                    Some(x) if x > 0 => { event.delay = x }
+                    _ => {
+                        event.delay = 0;
+                        // 对于 timer类型的event，如果已经过期
+                        if event.event_type == EventType::Timer {
+                            event.delay = event.timeout
+                        }
+                    }
+                }
+            }
+        }
+
+        // 收集所有delay在 interval 内的，添加到slot 0 中
+        for event in self.events.iter().filter(|e| e.delay <= self.interval) {
+            self.slots[0].push(event.clone());
+        }
+    }
+}
+
+fn main() {
+    println!("{:?}", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs());
+
+    // 每个槽时间跨度为1000ms
+    // 每个槽执行间隔为1000ms
+    // 一个周期为86400*7即一周
+    let mut timer_wheel = TimerWheel::new(1000, 1000, 86400 * 7);
+    // 创建一个 循环执行的 event，它每5000ms执行一次
+    let timer_event = Event::new(EventType::Timer, Rc::new(|| println!("0 Hello, world! {:?}", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())), 5000);
+    timer_wheel.add_event(timer_event);    // 创建一个 循环执行的 event，它每5000ms执行一次
+    let timer_event = Event::new(EventType::Timer, Rc::new(|| println!("1 Hello, world! {:?}", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())), 2001);
+    timer_wheel.add_event(timer_event);
+    // 创建一个定时执行的 event，它将在当前时间3000ms后执行
+    let datetime_event = Event::new(EventType::DateTime,
+                                    Rc::new(|| println!("2 Hello, world! {:?}", SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs())),
+                                    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() + 3000);
+    timer_wheel.add_event(datetime_event);
+    // 循环执行
+    loop {
+        // 打印当前时间
+        timer_wheel.tick();
+        println!("SLEEP {:?}", timer_wheel.ticks);
+        thread::sleep(Duration::from_millis(timer_wheel.ticks));
+    }
+}
 ```
