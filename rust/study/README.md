@@ -2415,6 +2415,23 @@ fn main() {
 ### 借用
 
 ```rust
+#[derive(Debug)]
+struct Person {
+    age: u32,
+    name: &'static str,
+}
+
+// 使用不可变借用
+fn borrow_person(b: &person) {
+    println!("borrow person:{:?}", b);
+}
+
+// 使用可变借用
+fn mut_borrow_person(b: &mut person) {
+    b.name = "new Name";
+    println!("mut borrow person:{:?}", b);
+}
+
 fn borrow(b: &i32) {
     println!("borrow:{}", b);
 }
@@ -2427,9 +2444,27 @@ fn main() {
     let boxed = Box::new(5i32);
     let stack = 6i32;
 
+    // 用于测试可变借用
+    let immut_person = Person {
+        age: 12,
+        name: "name",
+    };
+    let mut mut_person = immut_person;
+
+
     // 借用了内容，没有取得所有权
     borrow(&boxed);
     borrow(&stack);
+
+    // 不可变借用一个不可变对象
+    borrow_person(&immut_person);
+    // 不可变借用一个可变对象
+    borrow_person(&mut_person);
+    // 可变借用一个可变对象
+    mut_borrow_person(&mut mut_person);
+
+    // 无法借用一个不可变对象
+    // mut_borrow_person(&mut immut_person);
 
     {
         // 取得一个引用
@@ -2445,7 +2480,6 @@ fn main() {
     }
     moveinto(boxed);
 }
-
 ```
 
 ## 使用线程模块 实现go! 宏
