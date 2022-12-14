@@ -1,83 +1,74 @@
 use std::{thread, time};
+use std::borrow::Borrow;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-/// 一个线程安全易于共享的队列
+/// A thread safe and easy to share queue
 #[derive(Clone)]
-struct SafeQueue<T>
-    where T: Send, {
-    // 这样我们的queue就是一个Send,并且Sync的
+struct SafeQueue<T> {
+    //In this way, our Queue is a Send, and Sync’s
     queue: Arc<Mutex<Vec<T>>>,
 }
 
-impl<T: Send> SafeQueue<T> {
-    // 创建一个安全的队列
-    // 该队列的 Vec 实现了 Send，Sync trait
-    // 并且 被 Mutex 包裹
+impl<T> SafeQueue<T> {
+    // Create a safe queue
+    // The VEC of the queue implements send, Sync Trait
+    // and wrapped by Mutex
     fn new() -> SafeQueue<T> {
         SafeQueue {
             queue: Arc::new(Mutex::new(Vec::new())),
         }
     }
-    // 判断是否为空队列
+
     fn empty(&self) -> bool {
         let queue = self.queue.lock().unwrap();
         queue.is_empty()
     }
-    // 向队列安全的推一个item
+
     fn push(&self, item: T) {
         let mut queue = self.queue.lock().unwrap();
         queue.push(item);
     }
-    // 安全的弹出一个对象
+
     fn pop(&self) -> Option<T> {
         let mut queue = self.queue.lock().unwrap();
         queue.pop()
     }
 }
 
-
-macro_rules! go {
-    ($($body:tt)*) => {{
-        thread::spawn(move || {
-            $($body)*
-        });
-    }}
-}
-
-#[test]
-fn test() {
-    // 创建一个存储字符串的共享队列,将共享队列转换成 Arc 智能指针
+/// test case for String
+fn test_string_queue() {
+    // Create a shared queue to store strings and convert the shared queue to Arc smart Pointers
     let queue = Arc::new(SafeQueue::<String>::new());
 
-    // 创建一个子线程
-    // 这里使用了 move ,由于我们的queue 是 Arc的，所以move 的实际上是一个clone
+    // Create a child thread. We use move here. Since our queue is Arc, the move is actually a clone
     let queue_clone = queue.clone();
-    go! {
-        for i in 0..100{
-            queue_clone.push("Send from sender1:".to_owned()+&i.to_string());
+    thread::spawn(move || {
+        for i in 0..100 {
+            queue_clone.push("Send from sender1:".to_owned() + &i.to_string());
         }
-    }
+    });
 
     let queue_clone = queue.clone();
-    go! {
-        for i in 0..100{
-            queue_clone.push("Send from sender2:".to_owned()+&i.to_string());
+    thread::spawn(move || {
+        for i in 0..100 {
+            queue_clone.push("Send from sender2:".to_owned() + &i.to_string());
         }
-    }
+    });
 
     let mut num = 0;
 
     let queue_clone = queue.clone();
-    go! {
-        loop{
+    thread::spawn(move || {
+        loop {
             println!("Get From Thread {:?}", queue_clone.pop());
             thread::sleep(time::Duration::from_millis(1));
         }
-    }
+    });
     loop {
         thread::sleep(time::Duration::from_millis(1));
         if num < 100 {
-            // 在主线程中向队列中发送数据
+            // Sending data to the queue in the main thread
             queue.push("Send from main:".to_string() + &num.to_string());
             num += 1;
         }
@@ -86,4 +77,54 @@ fn test() {
         }
         println!("Get From main {:?}", queue.pop());
     }
+}
+
+/// test case for dyn FnOnce
+fn test_fn_once_queue() {
+    let queue = Arc::new(SafeQueue::<Box<dyn FnOnce() + Send + Sync>>::new());
+
+    let queue_clone = queue.clone();
+    thread::spawn(move || {
+        for i in 0..100 {
+            queue_clone.push(Box::new(move || println!("Send from sender1:{}", &i.to_string())));
+        }
+    });
+
+
+    let queue_clone = queue.clone();
+    thread::spawn(move || {
+        for i in 0..100 {
+            queue_clone.push(Box::new(move || println!("Send from sender2:{}", &i.to_string())));
+        }
+    });
+
+    let mut num = 0;
+
+    let queue_clone = queue.clone();
+    thread::spawn(move || {
+        loop {
+            if !queue_clone.empty() {
+                print!("Receive from thread:{:?} , ", (queue_clone.pop().unwrap())());
+            }
+            thread::sleep(time::Duration::from_millis(1));
+        }
+    });
+    loop {
+        thread::sleep(time::Duration::from_millis(1));
+        if num < 100 {
+            queue.push(Box::new(move || println!("Send from main:{}", &num.to_string())));
+            num += 1;
+        }
+        if queue.empty() {
+            break;
+        }
+        if !queue.empty() {
+            print!("Receive from main:{:?} , ", (queue.pop().unwrap())());
+        }
+    }
+}
+
+fn main() {
+    test_string_queue();
+    test_fn_once_queue();
 }
