@@ -4,10 +4,18 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 /// A thread safe and easy to share queue
-#[derive(Clone)]
 struct SafeQueue<T> {
     //In this way, our Queue is a Send, and Sync’s
     queue: Arc<Mutex<Vec<T>>>,
+}
+
+// use Send Clone for fix double Arc
+impl<T> Clone for SafeQueue<T> {
+    fn clone(&self) -> Self {
+        Self {
+            queue: self.queue.clone(),
+        }
+    }
 }
 
 impl<T> SafeQueue<T> {
@@ -36,8 +44,8 @@ impl<T> SafeQueue<T> {
     }
 }
 
-/// Task 结构体，用于表示一个可以被执行的任务
-/// 该 任务由一个回调函数表示，该回调函数实现了 FnOnce trait
+/// Task Structure that represents a task that can be executed
+/// This task is represented by a callback function that implements the FnOnce trait
 struct Task<F>
     where
         F: FnOnce() -> (),
@@ -50,10 +58,10 @@ impl<F:> Task<F>
     where F: FnOnce() -> (),
           F: Send + 'static,
 {
-    /// new 方法创建一个 新的 Task，该方法接受一个handler函数，并将其封装在Box中
-    /// 以便可以存储在结构体中
-    /// 这里要求这个 函数 是实现了FnOnce trait的一个函数或者闭包
-    /// where 限制需求的是一个类似与用在 spawn中的 闭包
+    /// new Method Create a new Task, which accepts a handler function and encapsulates it in Box
+    /// so that it can be stored in the structure
+    /// Here is a function or closure of this function to implement the Fnonce Trait
+    /// Where to limit the need is a closure similar to the closure used in spawn
     fn new(callback: F) -> Self
     {
         Task {
@@ -66,9 +74,9 @@ impl<F:> Task<F>
     }
 }
 
-/// Scheduler 结构体表示协程调度器，它维护了一组工作线程和任务队列。
-/// workers 工作者线程列表
-/// task_queue：可以在多个工作者线程中安全共享的任务队列
+/// Scheduler structure represents a coroutine scheduling, which maintains a set of work threads and task queues.
+/// worker: worker thread list
+/// task_queue: The task queue that can be shared safely in multiple workers threads
 struct Scheduler<F>
     where
         F: FnOnce() -> (),
@@ -77,54 +85,52 @@ struct Scheduler<F>
     // Worker thread queue
     workers: Vec<Worker>,
     // Task queues, which are called Send and Sync, can be shared in work
-    task_queue: Arc<SafeQueue<Task<F>>>,
+    task_queue: SafeQueue<Task<F>>,
 }
 
 impl<F> Scheduler<F>
     where F: FnOnce() -> (),
           F: Send + 'static,
 {
-    /// 根据 预计工作者线程熟练数量，创建工作线程
-    /// 线程的最大数量应该小于计算机最大线程数，因为rust 还无法实现绿色线程
+    /// According to the expected number of workers' threads, create working threads
+    /// The maximum number of threads should be less than the maximum number of computer threads, because Rust cannot achieve green threads
     fn new(worker_count: usize) -> Self {
         let mut workers = Vec::new();
-        // 创建一个新的任务队列
-        let task_queue = Arc::new(SafeQueue::new());
+        // Create a new global safe task queue
+        let task_queue = SafeQueue::new();
 
-        // 循环 worker_count次，每次创建一个新的Worker实例，并且将调度器创建的安全队列其添加到 workers中
+        // Cycle worker_count times, each time creates a new worker instance, and adds the safety queue created by the scheduler to
         for id in 0..worker_count {
-            // 每次创建Worker，将该任务队列传递给worker
+            // Each time we create a worker, pass the task queue to worker
             workers.push(Worker::new(id, task_queue.clone()));
         }
 
-        // 返回scheduler
         Scheduler {
             workers,
             task_queue,
         }
     }
-    /// run 方法，允许调用者传递一个任务，并且将其包装为Task后添加到队列中
-    /// 该任务是一个实现了 FnOnce() trait 的函数或者闭包
+    /// run method, allow the caller
+    /// This task is a function or closure of Fnonce() Trait
     fn run(&mut self, task: F)
     {
         self.task_queue.push(Task::new(task));
     }
 }
 
-
-/// 工作者
-/// id: 工作者id
-/// thread: 工作者线程句柄
+/// Workers
+/// id: Worker ID
+/// thread: Worker thread handle
 struct Worker {
     id: usize,
     thread: thread::JoinHandle<()>,
 }
 
 impl Worker {
-    /// new 函数 需求一个 可以共享的 队列
-    /// 并且它会将该队列的Send到子线程中
-    /// 返回 Worker，里面包含了 工作子线程的句柄 以及工作者id
-    fn new<F>(id: usize, task_queue: Arc<SafeQueue<Task<F>>>) -> Self
+    /// new Function Requires a queue that can be shared
+    /// and it will put the queue's send to the sub -thread
+    /// Return to worker, which contains the handle of the work sub-thread and the worker ID
+    fn new<F>(id: usize, task_queue: SafeQueue<Task<F>>) -> Self
         where
             F: FnOnce() -> (),
             F: Send + 'static,

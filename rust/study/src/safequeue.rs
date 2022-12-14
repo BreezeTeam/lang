@@ -4,10 +4,17 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 /// A thread safe and easy to share queue
-#[derive(Clone)]
 struct SafeQueue<T> {
     //In this way, our Queue is a Send, and Sync’s
     queue: Arc<Mutex<Vec<T>>>,
+}
+// use Send Clone for fix double Arc
+impl<T: Send> Clone for SafeQueue<T> {
+    fn clone(&self) -> Self {
+        Self {
+            queue: self.queue.clone(),
+        }
+    }
 }
 
 impl<T> SafeQueue<T> {
@@ -39,7 +46,7 @@ impl<T> SafeQueue<T> {
 /// test case for String
 fn test_string_queue() {
     // Create a shared queue to store strings and convert the shared queue to Arc smart Pointers
-    let queue = Arc::new(SafeQueue::<String>::new());
+    let queue = SafeQueue::<String>::new();
 
     // Create a child thread. We use move here. Since our queue is Arc, the move is actually a clone
     let queue_clone = queue.clone();
@@ -81,7 +88,7 @@ fn test_string_queue() {
 
 /// test case for dyn FnOnce
 fn test_fn_once_queue() {
-    let queue = Arc::new(SafeQueue::<Box<dyn FnOnce() + Send + Sync>>::new());
+    let queue = SafeQueue::<Box<dyn FnOnce() + Send + Sync>>::new();
 
     let queue_clone = queue.clone();
     thread::spawn(move || {

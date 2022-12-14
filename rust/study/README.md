@@ -2721,7 +2721,7 @@ fn main() {
 }
 ```
 
-## 并发编程：安全的跨线程共享队列 
+## 并发编程：安全的跨线程共享队列
 
 ```rust
 use std::{thread, time};
@@ -2730,10 +2730,17 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 /// A thread safe and easy to share queue
-#[derive(Clone)]
 struct SafeQueue<T> {
     //In this way, our Queue is a Send, and Sync’s
     queue: Arc<Mutex<Vec<T>>>,
+}
+// use Send Clone for fix double Arc
+impl<T> Clone for SafeQueue<T> {
+    fn clone(&self) -> Self {
+        Self {
+            queue: self.queue.clone(),
+        }
+    }
 }
 
 impl<T> SafeQueue<T> {
@@ -2765,7 +2772,7 @@ impl<T> SafeQueue<T> {
 /// test case for String
 fn test_string_queue() {
     // Create a shared queue to store strings and convert the shared queue to Arc smart Pointers
-    let queue = Arc::new(SafeQueue::<String>::new());
+    let queue = SafeQueue::<String>::new();
 
     // Create a child thread. We use move here. Since our queue is Arc, the move is actually a clone
     let queue_clone = queue.clone();
@@ -2807,7 +2814,7 @@ fn test_string_queue() {
 
 /// test case for dyn FnOnce
 fn test_fn_once_queue() {
-    let queue = Arc::new(SafeQueue::<Box<dyn FnOnce() + Send + Sync>>::new());
+    let queue = SafeQueue::<Box<dyn FnOnce() + Send + Sync>>::new();
 
     let queue_clone = queue.clone();
     thread::spawn(move || {
@@ -2856,7 +2863,6 @@ fn main() {
 }
 ```
 
-
 ## Schedule impl
 
 ```rust
@@ -2866,10 +2872,17 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 /// A thread safe and easy to share queue
-#[derive(Clone)]
 struct SafeQueue<T> {
     //In this way, our Queue is a Send, and Sync’s
     queue: Arc<Mutex<Vec<T>>>,
+}
+// use Send Clone for fix double Arc
+impl<T: Send> Clone for SafeQueue<T> {
+    fn clone(&self) -> Self {
+        Self {
+            queue: self.queue.clone(),
+        }
+    }
 }
 
 impl<T> SafeQueue<T> {
@@ -2939,7 +2952,7 @@ struct Scheduler<F>
     // Worker thread queue
     workers: Vec<Worker>,
     // Task queues, which are called Send and Sync, can be shared in work
-    task_queue: Arc<SafeQueue<Task<F>>>,
+    task_queue: SafeQueue<Task<F>>,
 }
 
 impl<F> Scheduler<F>
@@ -2951,7 +2964,7 @@ impl<F> Scheduler<F>
     fn new(worker_count: usize) -> Self {
         let mut workers = Vec::new();
         // 创建一个新的任务队列
-        let task_queue = Arc::new(SafeQueue::new());
+        let task_queue = SafeQueue::new();
 
         // 循环 worker_count次，每次创建一个新的Worker实例，并且将调度器创建的安全队列其添加到 workers中
         for id in 0..worker_count {
@@ -2986,7 +2999,7 @@ impl Worker {
     /// new 函数 需求一个 可以共享的 队列
     /// 并且它会将该队列的Send到子线程中
     /// 返回 Worker，里面包含了 工作子线程的句柄 以及工作者id
-    fn new<F>(id: usize, task_queue: Arc<SafeQueue<Task<F>>>) -> Self
+    fn new<F>(id: usize, task_queue: SafeQueue<Task<F>>) -> Self
         where
             F: FnOnce() -> (),
             F: Send + 'static,

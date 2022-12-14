@@ -4,10 +4,17 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 /// A thread safe and easy to share queue
-#[derive(Clone)]
 struct SafeQueue<T> {
     //In this way, our Queue is a Send, and Sync’s
     queue: Arc<Mutex<Vec<T>>>,
+}
+// use Send Clone for fix double Arc
+impl<T> Clone for SafeQueue<T> {
+    fn clone(&self) -> Self {
+        Self {
+            queue: self.queue.clone(),
+        }
+    }
 }
 
 impl<T> SafeQueue<T> {
@@ -77,7 +84,7 @@ struct Scheduler<F>
     // Worker thread queue
     workers: Vec<Worker>,
     // Task queues, which are called Send and Sync, can be shared in work
-    task_queue: Arc<SafeQueue<Task<F>>>,
+    task_queue: SafeQueue<Task<F>>,
 }
 
 impl<F> Scheduler<F>
@@ -89,7 +96,7 @@ impl<F> Scheduler<F>
     fn new(worker_count: usize) -> Self {
         let mut workers = Vec::new();
         // 创建一个新的任务队列
-        let task_queue = Arc::new(SafeQueue::new());
+        let task_queue = SafeQueue::new();
 
         // 循环 worker_count次，每次创建一个新的Worker实例，并且将调度器创建的安全队列其添加到 workers中
         for id in 0..worker_count {
@@ -124,7 +131,7 @@ impl Worker {
     /// new 函数 需求一个 可以共享的 队列
     /// 并且它会将该队列的Send到子线程中
     /// 返回 Worker，里面包含了 工作子线程的句柄 以及工作者id
-    fn new<F>(id: usize, task_queue: Arc<SafeQueue<Task<F>>>) -> Self
+    fn new<F>(id: usize, task_queue: SafeQueue<Task<F>>) -> Self
         where
             F: FnOnce() -> (),
             F: Send + 'static,
