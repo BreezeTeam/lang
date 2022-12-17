@@ -3175,4 +3175,90 @@ fn main() {
 }
 ```
 
+## 生命周期
+[参考文档](https://course.rs/advance/lifetime/basic.html#%E6%B7%B1%E5%85%A5%E6%80%9D%E8%80%83%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E6%A0%87%E6%B3%A8)
+```rust
 
+// longest及其返回值的生命周期‘a 和 x,y中作用域较小的那个
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+// longest2 的返回值只依赖了的 x的生命周期，因此编译通过
+fn longest2<'a>(x: &'a str, y: &str) -> &'a str {
+    x
+}
+
+
+fn main() {
+    let string1 = String::from("long string is long");
+    let result;
+    {
+        let string2 = String::from("xyz");
+        result = longest2(string1.as_str(), string2.as_str());
+    }
+    // 此处 result 的返回值依赖了 string2的生命周期，因此，result在此行无效
+    println!("The longest string is {}", result);
+}
+
+```
+
+### 深入生命周期
+
+```rust
+#[derive(Debug)]
+struct Foo;
+
+impl Foo {
+    fn mutate_and_share(&mut self) -> &Self {
+        &*self
+    }
+    fn share(&self) {}
+}
+
+fn main() {
+    let mut foo = Foo;
+    let loan = foo.mutate_and_share();
+    // 此处是因为&mut self 借用的生命周期和 loan 的生命周期相同，将持续到 println 结束。
+    // 而在此期间 foo.share() 又进行了一次不可变 &foo 借用，违背了可变借用与不可变借用不能同时存在的规则，最终导致了编译错误
+    // 改正方法，可以将 foo.share 该使用不可变借用&self的行，移动到 print之后
+    foo.share();
+    println!("{:?}", loan);
+
+}
+
+```
+### &'static
+```rust
+
+use std::{slice::from_raw_parts, str::from_utf8_unchecked};
+
+fn get_memory_location() -> (usize, usize) {
+    // “Hello World” 是字符串字面量，因此它的生命周期是 `'static`.
+    // 但持有它的变量 `string` 的生命周期就不一样了，它完全取决于变量作用域，对于该例子来说，也就是当前的函数范围
+    let string = "Hello World!";
+    let pointer = string.as_ptr() as usize;
+    let length = string.len();
+    (pointer, length)
+    // `string` 在这里被 drop 释放
+    // 虽然变量被释放，无法再被访问，但是数据依然还会继续存活
+}
+
+fn get_str_at_location(pointer: usize, length: usize) -> &'static str {
+    // 使用裸指针需要 `unsafe{}` 语句块
+    unsafe { from_utf8_unchecked(from_raw_parts(pointer as *const u8, length)) }
+}
+
+fn main() {
+    let (pointer, length) = get_memory_location();
+    let message = get_str_at_location(pointer, length);
+    println!(
+        "The {} bytes at 0x{:X} stored: {}",
+        length, pointer, message
+    );
+}
+
+```
