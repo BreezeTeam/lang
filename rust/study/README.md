@@ -3262,3 +3262,231 @@ fn main() {
 }
 
 ```
+
+
+## Trait
+
+### Box dyn trait
+```rust 
+
+
+fn main() {
+    let animal = get_animal();
+    println!("{}", animal.say());
+}
+
+// 使用 Box申请一个对堆上内存的引用，这样虽然，由于Animal trait由于各种实现，内存量不同
+// 但是我们返回的这个内存引用的大小是已知的
+trait Animal {
+    fn say(&self) -> &'static str;
+}
+
+struct Dog {}
+struct Cat {}
+
+impl Animal for Dog {
+    fn say(&self) -> &'static str {
+        "wang wang wang"
+    }
+}
+impl Animal for Cat {
+    fn say(&self) -> &'static str {
+        "miao miao miao"
+    }
+}
+
+fn get_animal() -> Box<dyn Animal> {
+    return Box::new(Cat {});
+}
+
+```
+
+
+### 运算符重载 https://rustwiki.org/zh-CN/core/ops/
+```rust
+use std::ops::{Add, Sub};
+
+#[derive(Debug, Clone, Copy)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+impl Add for Point {
+    type Output = Self;
+    fn add(self, rhs: Point) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Sub for Point {
+    type Output = Self;
+    fn sub(self, rhs: Point) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
+fn main() {
+    let a = Point { x: 0, y: 0 };
+    let b = Point { x: 1, y: 1 };
+    println!("{:?}", a - b);
+    println!("{:?}", a + b);
+}
+
+```
+
+
+### Iterator
+
+```rust
+
+struct Fibonacci {
+    current: u32,
+    next: u32,
+}
+
+impl Iterator for Fibonacci {
+    type Item = u32;
+    fn next(&mut self) -> Option<Self::Item> {
+        let new_next = self.current + self.next;
+        self.current = self.next;
+        self.next = new_next;
+        Some(self.current)
+    }
+}
+
+fn fibonacci() -> Fibonacci {
+    Fibonacci {
+        current: 1,
+        next: 1,
+    }
+}
+fn main() {
+    // 可以使用next 循环调用
+    let mut fib = fibonacci();
+    for i in 0..3 {
+        println!("{:?}", fib.next());
+    }
+    // 使用take 获取前N项目
+    for i in fibonacci().take(3) {
+        println!("{:?}", i)
+    }
+    // 使用skip 跳过
+    for i in fibonacci().skip(3).take(3) {
+        println!("{:?}", i)
+    }
+}
+
+```
+
+### impl Trait
+
+复杂的返回签名可以使用 impl trait的方式进行简化
+
+```rust
+// 复杂的返回签名可以使用 impl trait的方式进行简化
+fn func1(v: Vec<i32>, u: Vec<i32>) -> impl Iterator<Item = i32> {
+    v.into_iter().chain(u.into_iter()).cycle()
+}
+
+fn main() {
+    let v1 = vec![1, 2, 3];
+    let v2 = vec![4, 5, 6];
+    func1(v1, v2);
+}
+
+```
+
+或者是使用impl实现函数返回闭包的定义
+
+```rust
+fn make_add_function(y: i32) -> impl Fn(i32) -> i32 {
+    let closure = move |x: i32| x + y;
+    closure
+}
+
+fn main() {
+    let plus_one = make_add_function(1);
+    assert_eq!(plus_one(2), 3);
+}
+
+```
+
+并且我可以使用impl Trait 实现返回使用了map 或者 filter闭包的迭代器
+
+```rust
+fn some_test<'a>(number: &'a Vec<i32>) -> impl Iterator<i32> {
+    number.iter().filter(|x| x > &&0).map(|x| x * 2)
+}
+```
+
+### 父 trait
+
+```rust
+trait Person {
+    fn name(&self) -> &'static str;
+}
+
+// Person 是 Stdent的超集，即所有的Student都是Person
+// 实现了Student必须先 impl Person
+trait Student: Person {
+    fn university(&self) -> &'static str;
+}
+
+fn test(student: &dyn Student) -> String {
+    format!(
+        "My name is {:?} , university is {:?}",
+        student.name(),
+        student.university()
+    )
+}
+fn main() {}
+
+```
+
+
+### 重写 trait
+
+```rust
+trait getUsername {
+    fn get(&self) -> String;
+}
+
+trait getAge {
+    fn get(&self) -> u32;
+}
+
+struct User {
+    usernames: String,
+    age: u32,
+}
+impl getUsername for User {
+    fn get(&self) -> String {
+        self.usernames.clone()
+    }
+}
+
+impl getAge for User {
+    fn get(&self) -> u32 {
+        self.age
+    }
+}
+
+fn main() {
+    let user = User {
+        usernames: "username".to_owned(),
+        age: 32,
+    };
+
+    let username = <User as getUsername>::get(&user);
+    println!("{:?}", username);
+    let age = <User as getAge>::get(&user);
+    println!("{:?}", age);
+}
+
+```

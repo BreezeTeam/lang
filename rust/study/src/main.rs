@@ -1,23 +1,35 @@
-// 在这里，Rust 推导了一个尽可能短的生命周期。
-// 然后这两个引用都被强制转成这个生命周期。
-fn multiply<'a>(first: &'a i32, second: &'a i32) -> i32 {
-    first * second
+trait getUsername {
+    fn get(&self) -> String;
 }
 
-// `<'a: 'b, 'b>` 读作生命周期 `'a` 至少和 `'b` 一样长。
-// 在这里我们我们接受了一个 `&'a i32` 类型并返回一个 `&'b i32` 类型，这是
-// 强制转换得到的结果。
-fn choose_first<'a: 'b, 'b>(first: &'a i32, _: &'b i32) -> &'b i32 {
-    first
+trait getAge {
+    fn get(&self) -> u32;
+}
+
+struct User {
+    usernames: String,
+    age: u32,
+}
+impl getUsername for User {
+    fn get(&self) -> String {
+        self.usernames.clone()
+    }
+}
+
+impl getAge for User {
+    fn get(&self) -> u32 {
+        self.age
+    }
 }
 
 fn main() {
-    let first = 2; // 较长的生命周期
-
-    {
-        let second = 3; // 较短的生命周期
-
-        println!("The product is {}", multiply(&first, &second));
-        println!("{} is the first", choose_first(&first, &second));
+    let user = User {
+        usernames: "username".to_owned(),
+        age: 32,
     };
+
+    let username = <User as getUsername>::get(&user);
+    println!("{:?}", username);
+    let age = <User as getAge>::get(&user);
+    println!("{:?}", age);
 }
