@@ -29,7 +29,8 @@ func Start(in io.Reader, out io.Writer) {
 		// parser
 		p := parser.NewParser(l)
 
-		// parser program
+		// do parse
+		// get program ast root node
 		program := p.ProgramParser()
 
 		if len(p.Errors()) != 0 {
