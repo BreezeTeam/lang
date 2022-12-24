@@ -1,35 +1,28 @@
-trait getUsername {
-    fn get(&self) -> String;
-}
 
-trait getAge {
-    fn get(&self) -> u32;
-}
+use datafusion::error::Result;
+use datafusion::prelude::*;
 
-struct User {
-    usernames: String,
-    age: u32,
-}
-impl getUsername for User {
-    fn get(&self) -> String {
-        self.usernames.clone()
-    }
-}
+/// This example demonstrates executing a simple query against an Arrow data source (CSV) and
+/// fetching results
+#[tokio::main]
+async fn main() -> Result<()> {
+    // create local execution context
+    let ctx = SessionContext::new();
 
-impl getAge for User {
-    fn get(&self) -> u32 {
-        self.age
-    }
-}
+    // register csv file with the execution context
+    ctx.register_csv(
+        "task",
+        r"D../../src/tasks.csv",
+        CsvReadOptions::new(),
+    ).await?;
 
-fn main() {
-    let user = User {
-        usernames: "username".to_owned(),
-        age: 32,
-    };
+    // execute the query
+    let df = ctx
+        .sql("SELECT * FROM task ")
+        .await?;
 
-    let username = <User as getUsername>::get(&user);
-    println!("{:?}", username);
-    let age = <User as getAge>::get(&user);
-    println!("{:?}", age);
+    // print the results
+    df.show().await?;
+
+    Ok(())
 }

@@ -3450,7 +3450,7 @@ fn main() {}
 ```
 
 
-### 重写 trait
+### 使用完全限定语法消除重叠trait的歧义
 
 ```rust
 trait getUsername {
@@ -3489,4 +3489,37 @@ fn main() {
     println!("{:?}", age);
 }
 
+```
+
+## 使用rust读取CSV文件
+
+```rust
+
+use datafusion::error::Result;
+use datafusion::prelude::*;
+
+/// This example demonstrates executing a simple query against an Arrow data source (CSV) and
+/// fetching results
+#[tokio::main]
+async fn main() -> Result<()> {
+    // create local execution context
+    let ctx = SessionContext::new();
+
+    // register csv file with the execution context
+    ctx.register_csv(
+        "task",
+        r"D../../src/tasks.csv",
+        CsvReadOptions::new(),
+    ).await?;
+
+    // execute the query
+    let df = ctx
+        .sql("SELECT * FROM task ")
+        .await?;
+
+    // print the results
+    df.show().await?;
+
+    Ok(())
+}
 ```
