@@ -1,6 +1,6 @@
 # lang
 
-A language implemented using GO
+An interpreter for the programming language written in Rust and Golang
 
 ## 解释器的结构:
 

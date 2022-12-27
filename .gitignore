@@ -18,3 +18,8 @@ rust/.pre
 # vendor/
 
 pre
+
+*/.vscode/
+
+*/target/
+/rust/lang/target/
