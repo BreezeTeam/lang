@@ -5,7 +5,6 @@ use nom::{
     bytes::complete::{tag, take},
     character::complete::{alpha1, alphanumeric1, digit1, multispace0},
     combinator::{map, map_res, recognize},
-    // error::Error,
     multi::many0,
     sequence::{delimited, pair},
     IResult,
@@ -14,16 +13,21 @@ use std::str;
 
 // 对应Token 的解析子集合
 mod token_lex {
-
     use super::*;
-    /// tag 匹配宏
-    macro_rules! pattern {
+    /// 使用map来进行词法分析的匹配宏
+    macro_rules! map_lex {
         ($vis:vis $function_name:ident,$tag_string:literal,$token:expr) => {
             $vis fn $function_name(input: &[u8]) -> IResult<&[u8], Token> {
                 map(tag($tag_string), |_| $token)(input)
             }
         };
+        ($vis:vis $function_name:ident,$map_item:expr,$map_func:expr) => {
+            $vis fn $function_name(input: &[u8]) -> IResult<&[u8], Token> {
+                map($map_item, $map_func)(input)
+            }
+        };
     }
+
     /// 多解析子的alt宏
     macro_rules! parsers {
         ($vis:vis $function_name:ident,$parsers:expr) => {
@@ -34,18 +38,18 @@ mod token_lex {
     }
 
     // operators
-    pattern! {equal_operator, "==", Token::Equal}
-    pattern! {not_equal_operator, "!=", Token::NotEqual}
-    pattern! {greater_equal_operator, ">=", Token::GreaterThanEqual}
-    pattern! {lesser_equal_operator, "<=", Token::LessThanEqual}
-    pattern! {assign_operator, "=", Token::Assign}
-    pattern! {plus_operator, "+", Token::Plus}
-    pattern! {minus_operator, "-", Token::Minus}
-    pattern! {divide_operator, "/", Token::Divide}
-    pattern! {multiply_operator, "*", Token::Multiply}
-    pattern! {greater_operator, ">", Token::GreaterThan}
-    pattern! {lesser_operator, "<", Token::LessThan}
-    pattern! {not_operator, "!", Token::Not}
+    map_lex! {equal_operator, "==", Token::Equal}
+    map_lex! {not_equal_operator, "!=", Token::NotEqual}
+    map_lex! {greater_equal_operator, ">=", Token::GreaterThanEqual}
+    map_lex! {lesser_equal_operator, "<=", Token::LessThanEqual}
+    map_lex! {assign_operator, "=", Token::Assign}
+    map_lex! {plus_operator, "+", Token::Plus}
+    map_lex! {minus_operator, "-", Token::Minus}
+    map_lex! {divide_operator, "/", Token::Divide}
+    map_lex! {multiply_operator, "*", Token::Multiply}
+    map_lex! {greater_operator, ">", Token::GreaterThan}
+    map_lex! {lesser_operator, "<", Token::LessThan}
+    map_lex! {not_operator, "!", Token::Not}
 
     // 创建一个 多解析子的 lex_operator
     parsers! {lex_operator,
@@ -66,15 +70,15 @@ mod token_lex {
     }
 
     // punctuations
-    pattern! {comma_punctuation, ",", Token::Comma}
-    pattern! {colon_punctuation, ":", Token::Colon}
-    pattern! {semicolon_punctuation, ";", Token::SemiColon}
-    pattern! {lparen_punctuation, "(", Token::LParen}
-    pattern! {rparen_punctuation, ")", Token::RParen}
-    pattern! {lbrace_punctuation, "{", Token::LBrace}
-    pattern! {rbrace_punctuation, "}", Token::RBrace}
-    pattern! {lbracket_punctuation, "[", Token::LBracket}
-    pattern! {rbracket_punctuation, "]", Token::RBracket}
+    map_lex! {comma_punctuation, ",", Token::Comma}
+    map_lex! {colon_punctuation, ":", Token::Colon}
+    map_lex! {semicolon_punctuation, ";", Token::SemiColon}
+    map_lex! {lparen_punctuation, "(", Token::LParen}
+    map_lex! {rparen_punctuation, ")", Token::RParen}
+    map_lex! {lbrace_punctuation, "{", Token::LBrace}
+    map_lex! {rbrace_punctuation, "}", Token::RBrace}
+    map_lex! {lbracket_punctuation, "[", Token::LBracket}
+    map_lex! {rbracket_punctuation, "]", Token::RBracket}
 
     // 创建一个用于解析 punctuations 的多匹配子 lex_punctuations
     parsers! {lex_punctuations,
@@ -91,13 +95,13 @@ mod token_lex {
     }
 
     // keywords
-    pattern! {let_keywords,"let",Token::Let}
-    pattern! {function_keywords,"fn",Token::Function}
-    pattern! {if_keywords,"if",Token::If}
-    pattern! {else_keywords,"else",Token::Else}
-    pattern! {return_keywords,"return",Token::Return}
-    pattern! {true_keywords,"true",Token::BoolLiteral(true)}
-    pattern! {false_keywords,"false",Token::BoolLiteral(false)}
+    map_lex! {let_keywords,"let",Token::Let}
+    map_lex! {function_keywords,"fn",Token::Function}
+    map_lex! {if_keywords,"if",Token::If}
+    map_lex! {else_keywords,"else",Token::Else}
+    map_lex! {return_keywords,"return",Token::Return}
+    map_lex! {true_keywords,"true",Token::BoolLiteral(true)}
+    map_lex! {false_keywords,"false",Token::BoolLiteral(false)}
 
     // 创建一个用于解析关键字的多匹配解析子
     parsers! {lex_keywords,
@@ -115,6 +119,7 @@ mod token_lex {
     mod string_lex {
         use super::*;
         use std::result::Result::*;
+
         fn pis(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
             let (i1, c1) = take(1usize)(input)?;
             match c1 {
@@ -126,26 +131,24 @@ mod token_lex {
                 c => pis(i1).map(|(slice, done)| (slice, [&(c.to_vec())[..], &done[..]].concat())),
             }
         }
+
         pub fn stringliteral(input: &[u8]) -> IResult<&[u8], String> {
             // 匹配包含在 \"和\" 之间的部分
             delimited(
                 tag("\""),
-                map_res(string_lex::pis, String::from_utf8),
+                map_res(pis, String::from_utf8),
                 tag("\""),
             )(input)
         }
     }
 
     /// String parsing
-    fn lex_string(input: &[u8]) -> IResult<&[u8], Token> {
-        map(string_lex::stringliteral, Token::StringLiteral)(input)
-    }
+    map_lex! {lex_string,string_lex::stringliteral,Token::StringLiteral}
+
+
 
     /// ident parsing
-    fn lex_ident(input: &[u8]) -> IResult<&[u8], Token> {
-        // ident以字母或者下划线开头
-        // 然后是一个或者多个字母数字，下划线
-        // let ident_parse = ;
+    map_lex! {lex_ident,
         map_res(
             recognize(pair(
                 alt((alpha1, tag("_"))),
@@ -155,21 +158,15 @@ mod token_lex {
                 let byte_to_str = String::from_utf8(Vec::from(ident));
                 byte_to_str.map(|astr| Token::Ident(astr))
             },
-        )(input)
-    }
-    /// Integers parsing
-    fn lex_integer(input: &[u8]) -> IResult<&[u8], Token> {
-        map(
-            map_res(map_res(digit1, str::from_utf8), str::FromStr::from_str),
-            Token::IntLiteral,
-        )(input)
+        )
+        ,|token| token
     }
 
+    /// Integers parsing
+    map_lex! {lex_integer,map_res(map_res(digit1, str::from_utf8), str::FromStr::from_str),Token::IntLiteral}
+
     /// Illegal parsing,当所有token都匹配失败时应用
-    fn lex_illegal(input: &[u8]) -> IResult<&[u8], Token> {
-        // 将匹配到的结果转换为Token
-        map(take(1usize), |_| Token::Illegal)(input)
-    }
+    map_lex! {lex_illegal,take(1usize),|_| Token::Illegal}
 
     parsers! {lex_token,(
         lex_operator,
@@ -191,6 +188,7 @@ mod token_lex {
 
 /// Lexer 词法解析器
 pub struct Lexer;
+
 impl Lexer {
     /// 词法分析入口,利用匹配子进行词法分析，最后map Result后添加 `Token::EOF`
     pub fn lexing(bytes: &[u8]) -> IResult<&[u8], Vec<Token>> {
@@ -291,7 +289,7 @@ mod tests {
             }\
             return false;\
             "
-        .as_bytes();
+            .as_bytes();
 
         let (_, result) = Lexer::lexing(input).unwrap();
 
@@ -396,7 +394,7 @@ mod tests {
             result,
             vec![
                 Token::StringLiteral("foo\"bar with 💖 emojis".to_owned()),
-                Token::EOF
+                Token::EOF,
             ]
         );
     }
