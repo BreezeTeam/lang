@@ -142,12 +142,12 @@ mod token_lex {
         }
     }
 
-    /// String parsing
+    // String parsing
     map_lex! {lex_string,string_lex::stringliteral,Token::StringLiteral}
 
 
 
-    /// ident parsing
+    // ident parsing
     map_lex! {lex_ident,
         map_res(
             recognize(pair(
@@ -162,12 +162,13 @@ mod token_lex {
         ,|token| token
     }
 
-    /// Integers parsing
+    // Integers parsing
     map_lex! {lex_integer,map_res(map_res(digit1, str::from_utf8), str::FromStr::from_str),Token::IntLiteral}
 
-    /// Illegal parsing,当所有token都匹配失败时应用
+    // Illegal parsing,当所有token都匹配失败时应用
     map_lex! {lex_illegal,take(1usize),|_| Token::Illegal}
 
+    // 使用alt解析任意一个
     parsers! {lex_token,(
         lex_operator,
         lex_punctuations,

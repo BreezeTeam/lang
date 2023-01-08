@@ -1,8 +1,9 @@
 use std::iter::Enumerate;
+use std::ops::{Range, RangeFrom};
 use std::ptr::eq;
 use std::slice::Iter;
 
-use nom::{InputIter, InputLength, InputTake, Needed};
+use nom::{InputIter, InputLength, InputTake, Needed, Slice};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
@@ -90,6 +91,20 @@ pub enum Token {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Tokens<'a> {
     pub tokens: &'a [Token], // 不需要所有权
+}
+
+impl<'a> Slice<RangeFrom<usize>> for Tokens<'a> {
+    fn slice(&self, range: RangeFrom<usize>) -> Self {
+        self.slice(range.start..self.tokens.len() - 0usize)
+    }
+}
+
+impl<'a> Slice<Range<usize>> for Tokens<'a> {
+    fn slice(&self, range: Range<usize>) -> Self {
+        Tokens {
+            tokens: self.tokens.slice(range.clone()),
+        }
+    }
 }
 
 impl<'a> Tokens<'a> {

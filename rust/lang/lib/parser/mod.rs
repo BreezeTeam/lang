@@ -3,13 +3,11 @@ use crate::token::*;
 use crate::ast::Precedence::*;
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take},
-    character::complete::{alpha1, digit1, multispace0},
-    combinator::{map, map_res, opt, recognize, verify},
+    bytes::complete::take,
+    combinator::{map, opt, verify},
     error::{Error, ErrorKind},
-    error_position,
     multi::many0,
-    sequence::{delimited, pair, preceded, separated_pair, terminated, tuple},
+    sequence::{preceded, terminated, tuple},
     Err, IResult,
 };
 
@@ -365,6 +363,7 @@ mod program_parse {
 
         /// 解析 中缀语义表达式
         mod infix_parse {
+            use nom::combinator::success;
             use super::*;
             /// 解析 调用表达式
             /// 形如 `left ( [expr,expr,...] )`
@@ -404,32 +403,28 @@ mod program_parse {
                 }
             }
 
-            map_parser! {
-                pub parse_infix_expr->impl FnOnce(Expr) -> Expr,
-                (
-                    map(
-                        alt((
-                            verify_equal,
-                            verify_not_equal,
-                            verify_less_than_equal,
-                            verify_greater_than_equal,
-                            verify_less_than,
-                            verify_greater_than,
-                            verify_plus,
-                            verify_minus,
-                            verify_multipy,
-                            verify_divide,
-                        )),
-                        |token|{
-                            let (precedence,token_op) = precedences(&token.tokens[0]);
-                            let (_,right) = precedence_parse_expr(token,precedence).unwrap();
-                            (token_op.unwrap(),right)
-                        }
-                    ),
-                )=>|((infix,right),)| {
-                    |left:Expr| {
-                        Expr::InfixExpr (infix,Box::new(left),Box::new(right))
-                    }
+            /// 解析 中缀表达式
+            /// 匹配中缀操作符，将其映射为优先级以及Infix::Option
+            /// 然后再及解析剩余部分得到 right
+            /// 最后包装为一个 fn ，输入 left 返回 Expr::InfixExpr
+            pub fn parse_infix_expr(input: Tokens) -> IResult<Tokens, impl FnOnce(Expr) -> Expr> {
+                let (tokens, (token_precedence, token_opt)) = map(alt((
+                    verify_equal,
+                    verify_not_equal,
+                    verify_less_than_equal,
+                    verify_greater_than_equal,
+                    verify_less_than,
+                    verify_greater_than,
+                    verify_plus,
+                    verify_minus,
+                    verify_multipy,
+                    verify_divide,
+                )), |next| precedences(&next.tokens[0]))(input).unwrap();
+                if tokens.tokens.is_empty() {
+                    Err(Err::Error(Error::new(input, ErrorKind::Tag)))
+                } else {
+                    let (tokens, right) = precedence_parse_expr(tokens, token_precedence).unwrap();
+                    Ok((tokens, |left: Expr| Expr::InfixExpr(token_opt.unwrap(), Box::new(left), Box::new(right))))
                 }
             }
 
@@ -452,7 +447,9 @@ mod program_parse {
                             let (tokens, expression) = parse_infix_expr(input)?;
                             parse_infix(tokens, precedence, expression(left))
                         }
-                        _ => Ok((input, left)),
+                        _ => {
+                            Ok((input, left))
+                        }
                     }
                 }
             }
@@ -461,7 +458,8 @@ mod program_parse {
         /// 带优先级的表达式解析
         fn precedence_parse_expr(input: Tokens, precedence: Precedence) -> IResult<Tokens, Expr> {
             let (input, expression) = prefix_parse::parse_prefix(input)?;
-            infix_parse::parse_infix(input, precedence, expression)
+            let (tokens, expr) = infix_parse::parse_infix(input, precedence, expression)?;
+            Ok((tokens, expr))
         }
 
         /// 对于带优先级的表达式解析的包装
@@ -550,8 +548,7 @@ mod tests {
     fn assert_input_with_program(input: &[u8], expected_results: Program) {
         let (_, r) = Lexer::lexing(input).unwrap();
         let tokens = Tokens::new(&r);
-        println!("{:?}", tokens.tokens);
-        let (_,result) = Parser::parsing(tokens).unwrap();
+        let (_, result) = Parser::parsing(tokens).unwrap();
         assert_eq!(result, expected_results);
     }
 
