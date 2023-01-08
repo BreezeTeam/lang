@@ -1,4 +1,3 @@
-#[warn(unused_imports)]
 use crate::token::Token;
 use nom::{
     branch::alt,
@@ -37,7 +36,7 @@ mod token_lex {
         };
     }
 
-    // operators
+    /// operators
     map_lex! {equal_operator, "==", Token::Equal}
     map_lex! {not_equal_operator, "!=", Token::NotEqual}
     map_lex! {greater_equal_operator, ">=", Token::GreaterThanEqual}
@@ -51,7 +50,7 @@ mod token_lex {
     map_lex! {lesser_operator, "<", Token::LessThan}
     map_lex! {not_operator, "!", Token::Not}
 
-    // 创建一个 多解析子的 lex_operator
+    /// 创建一个 多解析子的 lex_operator
     parsers! {lex_operator,
         (
             equal_operator,
@@ -69,7 +68,7 @@ mod token_lex {
         )
     }
 
-    // punctuations
+    /// punctuations
     map_lex! {comma_punctuation, ",", Token::Comma}
     map_lex! {colon_punctuation, ":", Token::Colon}
     map_lex! {semicolon_punctuation, ";", Token::SemiColon}
@@ -80,7 +79,7 @@ mod token_lex {
     map_lex! {lbracket_punctuation, "[", Token::LBracket}
     map_lex! {rbracket_punctuation, "]", Token::RBracket}
 
-    // 创建一个用于解析 punctuations 的多匹配子 lex_punctuations
+    /// 创建一个用于解析 punctuations 的多匹配子 lex_punctuations
     parsers! {lex_punctuations,
         (   comma_punctuation,
             semicolon_punctuation,
@@ -94,7 +93,7 @@ mod token_lex {
         )
     }
 
-    // keywords
+    /// keywords
     map_lex! {let_keywords,"let",Token::Let}
     map_lex! {function_keywords,"fn",Token::Function}
     map_lex! {if_keywords,"if",Token::If}
@@ -103,7 +102,7 @@ mod token_lex {
     map_lex! {true_keywords,"true",Token::BoolLiteral(true)}
     map_lex! {false_keywords,"false",Token::BoolLiteral(false)}
 
-    // 创建一个用于解析关键字的多匹配解析子
+    /// 创建一个用于解析关键字的多匹配解析子
     parsers! {lex_keywords,
         (
             let_keywords,
@@ -142,12 +141,12 @@ mod token_lex {
         }
     }
 
-    // String parsing
+    /// String parsing
     map_lex! {lex_string,string_lex::stringliteral,Token::StringLiteral}
 
 
 
-    // ident parsing
+    /// ident parsing
     map_lex! {lex_ident,
         map_res(
             recognize(pair(
@@ -162,13 +161,13 @@ mod token_lex {
         ,|token| token
     }
 
-    // Integers parsing
+    /// Integers parsing
     map_lex! {lex_integer,map_res(map_res(digit1, str::from_utf8), str::FromStr::from_str),Token::IntLiteral}
 
-    // Illegal parsing,当所有token都匹配失败时应用
+    /// Illegal parsing,当所有token都匹配失败时应用
     map_lex! {lex_illegal,take(1usize),|_| Token::Illegal}
 
-    // 使用alt解析任意一个
+    /// 使用alt解析任意一个
     parsers! {lex_token,(
         lex_operator,
         lex_punctuations,

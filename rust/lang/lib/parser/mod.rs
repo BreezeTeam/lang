@@ -363,7 +363,6 @@ mod program_parse {
 
         /// 解析 中缀语义表达式
         mod infix_parse {
-            use nom::combinator::success;
             use super::*;
             /// 解析 调用表达式
             /// 形如 `left ( [expr,expr,...] )`
@@ -447,9 +446,7 @@ mod program_parse {
                             let (tokens, expression) = parse_infix_expr(input)?;
                             parse_infix(tokens, precedence, expression(left))
                         }
-                        _ => {
-                            Ok((input, left))
-                        }
+                        _ => Ok((input, left)),
                     }
                 }
             }
@@ -458,8 +455,7 @@ mod program_parse {
         /// 带优先级的表达式解析
         fn precedence_parse_expr(input: Tokens, precedence: Precedence) -> IResult<Tokens, Expr> {
             let (input, expression) = prefix_parse::parse_prefix(input)?;
-            let (tokens, expr) = infix_parse::parse_infix(input, precedence, expression)?;
-            Ok((tokens, expr))
+            infix_parse::parse_infix(input, precedence, expression)
         }
 
         /// 对于带优先级的表达式解析的包装
