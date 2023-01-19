@@ -2477,7 +2477,9 @@ dependencies = [
  "nom",
  "poem",
  "poem-openapi",
+ "quote",
  "sled",
+ "syn",
  "tokio",
  "tracing-subscriber",
 ]

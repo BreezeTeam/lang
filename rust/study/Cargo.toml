@@ -6,7 +6,20 @@ author = ["Euraxluo <euraxluo@outlook.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+[lib]
+proc-macro = true
+name = "lib"
+path = "lib/lib.rs"
+
+[[bin]]
+name = "study"
+path = "src/main.rs"
+
+
 [dependencies]
+syn = "1.0"
+quote = "1.0"
 anyhow = "1.0.66"
 clap = { version = "4.0.19", features = ["derive"] }
 crossbeam-channel = "0.5.6"
