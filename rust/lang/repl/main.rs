@@ -3,6 +3,7 @@ extern crate nom;
 extern crate rustyline;
 extern crate rustyline_derive;
 
+use lang_lib::evaluator::*;
 use lang_lib::lexer::*;
 use lang_lib::parser::*;
 use lang_lib::token::*;
@@ -109,7 +110,7 @@ fn main() -> rustyline::Result<()> {
     println!("Press Ctrl-D or enter \"quit\" to exit.");
     println!();
 
-    // let mut evaluator = Evaluator::new();
+    let mut evaluator = Evaluator::new();
     let mut count = 1;
 
     loop {
@@ -127,8 +128,9 @@ fn main() -> rustyline::Result<()> {
                         let parsed = Parser::parsing(Tokens::new(&r));
                         match parsed {
                             Ok((_, program)) => {
-                                // let eval = evaluator.eval_program(program);
-                                println!("{:?}", program);
+                                let eval = evaluator.evaluation(program);
+                                println!("{:?}", &program);
+                                // println!("{:?}", &eval);
                             }
                             Err(Err::Error(_)) => println!("Parser error"),
                             Err(Err::Failure(_)) => println!("Parser failure"),

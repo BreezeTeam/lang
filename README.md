@@ -17,7 +17,7 @@ An interpreter for the programming language written in Rust and Golang
    这是一种自上而下操作符优先级解析方法，是作为基于上下文无关文化和Backus-Naur-From 解析器的替代方案
    > 当完成 语法分析后，我们会判断该语言的基本语法问题，并且构造一个ast树，该树由表达式(Expression)和语句(Statement)组成
    > 树根即为 Program ast root node，它由语句列表组成
-4. 对象系统(object)
+3. 对象系统(object)
    > 在开始构建 我们 eval ast 解释执行器之前，我们首先需要定义我们的对象系统
    > 该系统将解释的值对象和解释器编写语言（golang）的对象进行关联，并且通过定义合适的接口，来向使用语言的用户提供数据
    > 简单的说，语义分析中需要对ast节点进行计算，我们会将计算结果存储在我们定义的对象系统中
