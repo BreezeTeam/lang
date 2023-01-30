@@ -1,55 +1,54 @@
-extern crate lib;
-
-use std::f64::consts::SQRT_2;
-use lib::PathFindOption;
-
-pub trait PathFindOption: Sized + Copy {}
-
-/// Heuristic function trait
-pub trait Heuristic: PathFindOption {
-    /// get heuristic function
-    fn heuristic(&self, dx: f64, dy: f64) -> f64;
+trait Node {
+    type Coord;
+    fn new(&self, x: Self::Coord, y: Self::Coord) -> Self;
 }
 
-
-/// Manhattan distance.
-#[derive(Copy, Clone, PathFindOption)]
-pub struct Manhattan;
-
-impl Heuristic for Manhattan {
-    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
-        dx + dy
+trait G
+    where Self::N: Node<Coord= <Self as G>::Coord>,
+{
+    type N;
+    type Coord;
+    fn as_node(&self) -> Self::N;
+    fn create_node(&self, x: Self::Coord, y: Self::Coord) -> Option<Self::N> {
+        Some(self.as_node().new(x, y))
+        // None
     }
 }
 
-/// Euclidean distance
-#[derive(Copy, Clone,PathFindOption)]
-pub struct Euclidean;
+#[derive(Clone, Debug, Default)]
+struct SN {
+    x: usize,
+    y: usize,
+}
 
-impl Heuristic for Euclidean {
-    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
-        (dx * dx + dy * dy as f64).sqrt()
+impl Node for SN {
+    type Coord = usize;
+
+    fn new(&self, x: Self::Coord, y: Self::Coord) -> Self {
+        Self {
+            x,
+            y,
+        }
     }
 }
 
-/// Octile distance
-#[derive(Copy, Clone,PathFindOption)]
-pub struct Octile;
+#[derive(Default, Debug)]
+struct Graph {
+    n: SN,
+}
 
-impl Heuristic for Octile {
-    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
-        if dx < dy { (SQRT_2 - 1.0) * dx + dy } else { (SQRT_2 - 1.0) * dy + dx }
+impl G for Graph {
+    type N = SN;
+    type Coord = <SN as Node>::Coord;
+
+    fn as_node(&self) -> Self::N {
+        self.n.clone()
     }
 }
 
-/// Chebyshev distance
-#[derive(Copy, Clone,PathFindOption)]
-pub struct Chebyshev;
-
-impl Heuristic for Chebyshev {
-    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
-        if dx > dy { dx } else { dy }
-    }
+fn main() {
+    let g = Graph::default();
+    println!("{:?}", g);
+    let m = g.create_node(1, 5);
+    println!("{:?}", m);
 }
-
-fn main() {}
