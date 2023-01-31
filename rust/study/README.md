@@ -3865,3 +3865,168 @@ fn main() {
     assert_eq!(shortest_path(&graph, 4, 0), None);
 }
 ```
+
+## 过程宏
+cargo.toml
+```toml
+[lib]
+proc-macro = true
+name = "lib"
+path = "lib/lib.rs"
+
+[[bin]]
+name = "study"
+path = "src/main.rs"
+
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
+```
+
+lib
+```rust
+
+extern crate proc_macro;
+extern crate quote;
+
+use proc_macro::TokenStream;
+use quote::quote;
+
+#[proc_macro_derive(PathFindOption)]
+pub fn path_find_option_derive(input: TokenStream) -> TokenStream {
+    // Construct a representation of Rust code as a syntax tree
+    // that we can manipulate
+    let ast = syn::parse(input).unwrap();
+
+    // Build the trait implementation
+    impl_path_find_option(&ast)
+}
+
+fn impl_path_find_option(ast: &syn::DeriveInput) -> TokenStream {
+    let name = &ast.ident;
+    let gen = quote! {
+        impl PathFindOption for #name {}
+    };
+    gen.into()
+}
+
+
+```
+main:
+```rust
+extern crate lib;
+
+use std::f64::consts::SQRT_2;
+use lib::PathFindOption;
+
+pub trait PathFindOption: Sized + Copy {}
+
+/// Heuristic function trait
+pub trait Heuristic: PathFindOption {
+    /// get heuristic function
+    fn heuristic(&self, dx: f64, dy: f64) -> f64;
+}
+
+
+/// Manhattan distance.
+#[derive(Copy, Clone, PathFindOption)]
+pub struct Manhattan;
+
+impl Heuristic for Manhattan {
+    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
+        dx + dy
+    }
+}
+
+/// Euclidean distance
+#[derive(Copy, Clone,PathFindOption)]
+pub struct Euclidean;
+
+impl Heuristic for Euclidean {
+    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
+        (dx * dx + dy * dy as f64).sqrt()
+    }
+}
+
+/// Octile distance
+#[derive(Copy, Clone,PathFindOption)]
+pub struct Octile;
+
+impl Heuristic for Octile {
+    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
+        if dx < dy { (SQRT_2 - 1.0) * dx + dy } else { (SQRT_2 - 1.0) * dy + dx }
+    }
+}
+
+/// Chebyshev distance
+#[derive(Copy, Clone,PathFindOption)]
+pub struct Chebyshev;
+
+impl Heuristic for Chebyshev {
+    fn heuristic(&self, dx: f64, dy: f64) -> f64 {
+        if dx > dy { dx } else { dy }
+    }
+}
+
+fn main() {}
+```
+
+## 互相依赖的Trait
+```rust
+trait Node {
+    type Coord;
+    fn new(&self, x: Self::Coord, y: Self::Coord) -> Self;
+}
+
+/// key point
+trait G
+    where Self::N: Node<Coord= <Self as G>::Coord>,
+{
+    type N;
+    type Coord;
+    fn as_node(&self) -> Self::N;
+    fn create_node(&self, x: Self::Coord, y: Self::Coord) -> Option<Self::N> {
+        Some(self.as_node().new(x, y))
+        // None
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct SN {
+    x: usize,
+    y: usize,
+}
+
+impl Node for SN {
+    type Coord = usize;
+
+    fn new(&self, x: Self::Coord, y: Self::Coord) -> Self {
+        Self {
+            x,
+            y,
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+struct Graph {
+    n: SN,
+}
+
+impl G for Graph {
+    type N = SN;
+    type Coord = <SN as Node>::Coord;
+
+    fn as_node(&self) -> Self::N {
+        self.n.clone()
+    }
+}
+
+fn main() {
+    let g = Graph::default();
+    println!("{:?}", g);
+    let m = g.create_node(1, 5);
+    println!("{:?}", m);
+}
+```
