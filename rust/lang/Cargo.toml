@@ -9,9 +9,6 @@ edition = "2021"
 name = "lang_lib"
 path = "lib/lang.rs"
 
-[[bin]]
-name = "lang_exe"
-path = "src/main.rs"
 
 [[bin]]
 name = "lang_repl_exe"

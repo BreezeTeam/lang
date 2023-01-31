@@ -9,7 +9,7 @@ use crate::object::environment::Environment;
 
 pub type BuiltinFunction = fn(Vec<Object>) -> Result<Object, String>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),
@@ -31,6 +31,8 @@ pub enum Object {
     // error message
     Error(String),
 }
+
+impl Eq for Object {}
 
 impl Display for Object {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -64,7 +66,7 @@ impl Display for Object {
                 let mut fmt_string = String::new();
                 fmt_string.push('{');
                 for (i, (k, v)) in hashmap.iter().enumerate() {
-                    fmt_string.push_str(format!("{} : {}", k, v).as_str());
+                    fmt_string.push_str(format!("{} : {}", k, v.clone()).as_str());
                     if i < hashmap.len() - 1 {
                         fmt_string.push_str(", ");
                     }

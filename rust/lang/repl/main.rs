@@ -14,7 +14,7 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::{Hinter, HistoryHinter};
 use rustyline::validate::{self, MatchingBracketValidator, Validator};
-use rustyline::{Cmd, CompletionType, Config, Context, EditMode, Editor, KeyEvent};
+use rustyline::{CompletionType, Config, Context, EditMode, Editor};
 use rustyline_derive::Helper;
 use std::borrow::Cow::{self, Borrowed, Owned};
 
@@ -129,8 +129,7 @@ fn main() -> rustyline::Result<()> {
                         match parsed {
                             Ok((_, program)) => {
                                 let eval = evaluator.evaluation(program);
-                                println!("{:?}", &program);
-                                // println!("{:?}", &eval);
+                                println!("{:?}", eval.clone());
                             }
                             Err(Err::Error(_)) => println!("Parser error"),
                             Err(Err::Failure(_)) => println!("Parser failure"),
